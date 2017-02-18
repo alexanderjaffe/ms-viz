@@ -13,7 +13,7 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 			# get next scan
 			next_scan = sample.next()
 			# filter for keepers
-			if next_scan["num"] in keepers_list[basename]:
+			if next_scan["num"] in keepers_list[basename].keys():
 				# convert np arrays to json-friendly lists, and round vals
 				ia = [round(val,2) for val in next_scan["intensity array"]]
 				mz = [round(val,2) for val in next_scan["m/z array"]]
@@ -23,6 +23,7 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 					for i in range(len(mz)):
 						spectrum.append({"i":ia[i], "mz":mz[i]})
 					next_scan["spectrum"] = spectrum
+					next_scan["compound"] = keepers_list[basename][next_scan["num"]]
 					next_scan.pop("intensity array")
 					next_scan.pop("m/z array")
 				scans.append(next_scan)
@@ -60,13 +61,13 @@ def get_keepers(cmpd_table, spectra_file):
 					# parse out sample name and spectra
 					sample = path.split("/")[len(path.split("/"))-1].strip(".mzXML")
 					# take first spectrum as representative
-					spectra = element.split("$")[1].split(",")[0]
+					spectrum = element.split("$")[1].split(",")[0]
 					# build sample: spectra to keep dict
 					if sample not in keepers.keys():
-						keepers[sample] = [spectra]
+						keepers[sample] = {spectrum: cmpd}
 					else:
-						keepers[sample] = keepers[sample] + [spectra]
-
+						keepers[sample][spectrum] = cmpd
+	print keepers
 	return(keepers)
 
 def main():
