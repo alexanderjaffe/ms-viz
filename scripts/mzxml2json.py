@@ -12,34 +12,25 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 		try:
 			# get next scan
 			next_scan = sample.next()
-			# convert np arrays to json-friendly lists
-			next_scan["intensity array"] = next_scan["intensity array"].tolist()
-			next_scan["m/z array"] = next_scan["m/z array"].tolist()
 			# filter for keepers
 			if next_scan["num"] in keepers_list[basename]:
+				# convert np arrays to json-friendly lists, and round vals
+				ia = [round(val,2) for val in next_scan["intensity array"]]
+				mz = [round(val,2) for val in next_scan["m/z array"]]
+				# write peaks as json pairs
+				if len(ia) == len(mz):
+					spectrum = []
+					for i in range(len(mz)):
+						spectrum.append({"i":ia[i], "mz":mz[i]})
+					next_scan["spectrum"] = spectrum
+					next_scan.pop("intensity array")
+					next_scan.pop("m/z array")
 				scans.append(next_scan)
 		except:
 			break
 	return(scans)
 
 def get_keepers(cmpd_table, spectra_file):
-
-	'''# help from alex CC - preprocess_data.py
-	f = open(cmpd_table)
-	i=0
-	cmpds, firstline = [],[]
-	for line in f.readlines():
-		if i!=0:
-			cmpds.append(line.split(",")[0])
-		else:
-			samples.append(line.split(","))
-			i+=1
-
-	samples = []
-	for item in firstline:
-		if "mzXML" in item:
-			samples.append(item.split["/"][len(item.split["/"]-1)].strip(".mzXML"))
-	print cmpds, samples '''
 
    	with open(cmpd_table) as f:
    		table = f.readlines()

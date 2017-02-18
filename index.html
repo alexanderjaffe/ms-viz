@@ -198,7 +198,7 @@
             queue()
                 .defer(d3.json, 'data/perDayData.json')
                 .defer(d3.json, 'data/MYWorld_fields.json')
-                .defer(d3.json, 'data/mzXML.json')
+                .defer(d3.json, 'scripts/mzXML.json')
                 .await(function(error,file1,file2, file3){dataLoaded(error,file1,file2, file3)});
 
                 // bind reset zoom button to a function (-- ONLY FOR BONUS --)
