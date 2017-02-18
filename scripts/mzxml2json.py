@@ -16,12 +16,10 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 			next_scan["intensity array"] = next_scan["intensity array"].tolist()
 			next_scan["m/z array"] = next_scan["m/z array"].tolist()
 			# filter for keepers
-			if next_scan["num"] in keepers_dict[basename]:
+			if next_scan["num"] in keepers_list[basename]:
 				scans.append(next_scan)
-			else: pass 
 		except:
 			break
-
 	return(scans)
 
 def get_keepers(cmpd_table, spectra_file):
@@ -64,16 +62,19 @@ def get_keepers(cmpd_table, spectra_file):
 		cmpd = line.split("|")[0]
 		# only keep cmpds from cmpd table
 		if cmpd in cmpds:
+			# iterate through spectra entries and add to dict 
 			for element in line.strip("\n").split("|"):
 				if "mzXML" in element:
 					path = element.split("$")[0]
+					# parse out sample name and spectra
 					sample = path.split("/")[len(path.split("/"))-1].strip(".mzXML")
-					spectra = element.split("$")[1].split(",")
+					# take first spectrum as representative
+					spectra = element.split("$")[1].split(",")[0]
 					# build sample: spectra to keep dict
 					if sample not in keepers.keys():
-						keepers[sample] = spectra
+						keepers[sample] = [spectra]
 					else:
-						keepers[sample] = keepers[sample] + spectra
+						keepers[sample] = keepers[sample] + [spectra]
 
 	return(keepers)
 
@@ -106,12 +107,13 @@ def main():
 		print "Processing " + basename + ".mzXML"
 		#out_path = out_dir + "/" + basename + ".json"
 		# convert to json and combine into one giant file
-		#final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)
+		final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)
+		print "Retaining %d spectra..." %(len(final_json[basename]))
 
 	#out_path = out_dir + "/" + "mzXML.json"
 	out_path = "mzXML.json"
-	#with open(out_path, "w") as out_file:
-		#out_file.write(json.dumps(final_json))
+	with open(out_path, "w") as out_file:
+		out_file.write(json.dumps(final_json))
 
 if __name__ == '__main__':
 	main()
