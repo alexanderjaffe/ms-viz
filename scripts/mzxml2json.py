@@ -24,6 +24,7 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 						spectrum.append({"i":ia[i], "mz":mz[i]})
 					next_scan["spectrum"] = spectrum
 					next_scan["compound"] = keepers_list[basename][next_scan["num"]]
+					next_scan["sample"] = basename
 					next_scan.pop("intensity array")
 					next_scan.pop("m/z array")
 				scans.append(next_scan)
@@ -67,7 +68,6 @@ def get_keepers(cmpd_table, spectra_file):
 						keepers[sample] = {spectrum: cmpd}
 					else:
 						keepers[sample][spectrum] = cmpd
-	print keepers
 	return(keepers)
 
 def main():
@@ -91,7 +91,7 @@ def main():
 	# generate keepers list for each sample
 	keepers_dict = get_keepers(args.compound_table, args.spectra_file)
 
-	final_json = {}
+	final_json = []
 	# select all mzXML in in_dir
 	for sample in glob.glob((in_dir+"/*mzXML")):
 		# get file name
@@ -99,8 +99,9 @@ def main():
 		print "Processing " + basename + ".mzXML"
 		#out_path = out_dir + "/" + basename + ".json"
 		# convert to json and combine into one giant file
-		final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)
-		print "Retaining %d spectra..." %(len(final_json[basename]))
+		#final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)
+		final_json = final_json + retrieve_spectra(sample, basename, keepers_dict)
+		print "Total of %d spectra..." %(len(final_json))
 
 	#out_path = out_dir + "/" + "mzXML.json"
 	out_path = "mzXML.json"
