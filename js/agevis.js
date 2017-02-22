@@ -212,7 +212,3 @@ AgeVis.prototype.filterAndAggregate = function(_filter){
     return res;
 
 }
-
-
-
-
