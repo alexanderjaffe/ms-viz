@@ -18,6 +18,7 @@ def ftp(mode, _input, _output, server, login, password):
 		try:
 			ftp.storbinary("STOR " + _output, myfile)
 			print "Upload successful."
+			myfile.close()
 		except:
 			print "File upload failed :/"
 			sys.exit()
@@ -26,6 +27,7 @@ def ftp(mode, _input, _output, server, login, password):
 		try:
 			ftp.retrbinary('RETR %s' % _input, myfile.write)
 			print "Retrieve successful."
+			myfile.close()
 		except:
 			print "File retrieve failed :/"
 			sys.exit()
@@ -54,8 +56,6 @@ def main():
 	server = raw_input("Server URL: ")
 	un = raw_input("Enter username: ")
 	pw = raw_input("Enter password: ")
-	in_dir = args.input
-	out_dir = args.output
 
 	print "Logging in to %s as user %s." %(server, un)
 	print "Performing %s on %s..." %(args.mode, args.output)

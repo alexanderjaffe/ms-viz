@@ -36,6 +36,7 @@ def get_keepers(cmpd_table, spectra_file):
 
    	with open(cmpd_table) as f:
    		table = f.readlines()
+   	f.close()
 
    	# check for filtered cmpd_table
    	if len(table) > 200:
@@ -68,6 +69,7 @@ def get_keepers(cmpd_table, spectra_file):
 						keepers[sample] = {spectrum: cmpd}
 					else:
 						keepers[sample][spectrum] = cmpd
+	f2.close()
 	return(keepers)
 
 def main():
@@ -104,9 +106,10 @@ def main():
 		print "Total of %d spectra..." %(len(final_json))
 
 	#out_path = out_dir + "/" + "mzXML.json"
-	out_path = "mzXML.json"
+	out_path = "../data/spectra.json"
 	with open(out_path, "w") as out_file:
 		out_file.write(json.dumps(final_json))
-
+	out_file.close()
+	
 if __name__ == '__main__':
 	main()
