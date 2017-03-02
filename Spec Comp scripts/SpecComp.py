@@ -6,8 +6,8 @@ from operator import itemgetter
 import numpy as np
 import csv
 from itertools import izip
-from sklearn.decomposition import TruncatedSVD
-
+from sklearn.decomposition import PCA
+from sklearn import preprocessing
 
 input_file=sys.argv[1]
 
@@ -36,12 +36,13 @@ def preprocess_sample(sample):
 			percentComposition= ms2_TIC/msI_TIC
 			#Normalize and log transform peak intensities in each scan
 			#intensities = normalize(np.log(1+np.asarray(scan['intensity array']).reshape(1,-1)), norm='l1')[0]
-			for x in range(0,len(intensity_array)): 
-				intensity_array[x]= intensity_array[x]/ms2_TIC	
+			# for x in range(0,len(intensity_array)): 
+			# 	intensity_array[x]= intensity_array[x]/ms2_TIC	
 			mzs = scan['m/z array']
 			num = int(scan['num'])
 			percentComposition= ms2_TIC/msI_TIC
-			base_peaks[num] = {"num":num, "base_mz":base_mz, "intensities":intensity_array, "mzs":mzs, "precursor_intensity": precursor_intensity,"Percent of Sample": percentComposition, "MSI TIC": msI_TIC}
+			base_peaks[num] = {"num":num, "base_mz":base_mz, "intensities":intensity_array, "mzs":mzs, "precursor_intensity": precursor_intensity,"Percent of Sample": percentComposition, "MS2 TIC": ms2_TIC}
+
 			all_peaks = all_peaks + mzs.tolist()
 
 	peak_min = int(math.floor(min(all_peaks)))
@@ -55,14 +56,27 @@ def preprocess_sample(sample):
 	#Returns a list of MS2 spectra organized by scan #, and the largest and smallest precursor peaks across all MS2 in this file.
 	return peak_min, peak_max, base_peaks
 
+""" 
+	Orders Peak data by percent composition of identified compounds that have MSII 
+	After finding clustering of molecules, maybe it could look at its clustering and see which one has the highest abundance of such a molecule,
+	or rather, if it is abundant at all? 
+
+"""
 def orderedPercentComp(new_peak_data): 
 	percentComp_list=[]
 	for key in new_peak_data.keys(): 
-		percentComp_list.append((new_peak_data[key]['Percent of Sample'],new_peak_data[key]['MSI TIC']))
-	print sorted(percentComp_list,key=lambda x: x[0], reverse=True)
-	#print percentComp_list
-	#for data in new_peak_data: 
-		
+		percentComp_list.append((new_peak_data[key]['num'],new_peak_data[key]['Percent of Sample'],new_peak_data[key]['MS2 TIC']))
+	lis= sorted(percentComp_list,key=lambda x: x[1], reverse=True)
+	return lis
+
+
+def doPCA(peak_vectors):
+	
+	#Run SVD on sparse matrix- similar to Truncated SVD 
+	pca = PCA(n_components=3)
+	#fit to PCA
+	pca.fit(peak_vectors)
+	print(pca.explained_variance_ratio_)
 
 def vectorize_peak(peak_min, peak_max, sample_data, sample_name):	
 
@@ -85,7 +99,7 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name):
 		peak_vectors[scan['num']] = peak_vector
 
 	  	peak_vectors_list.append(scan['num'])
-	return peak_vectors#peak_vectors_list
+	return peak_vectors
 
 
 peak_min = 999999999
@@ -96,11 +110,15 @@ if new_min < peak_min:
 	peak_min = new_min
 if new_max > peak_max:
 	peak_max = new_max
-orderedPercentComp(new_peak_data)
+ordered_Peaks= orderedPercentComp(new_peak_data)
 #peak_data[sample] = new_peak_data
-#for sample in peak_data:
+#
 peak_data = vectorize_peak(peak_min, peak_max, new_peak_data, input_file)
-
+value_list=[]
+for key in peak_data.keys():
+	 value_list.append(peak_data[key])
+peak_data_2d= np.array(value_list)
+doPCA(peak_data_2d)#scaled_array)
 #pca
 #f-set
 #t-sne 
