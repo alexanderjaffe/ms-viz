@@ -74,62 +74,75 @@ def wait_for_workflow_finish(base_url, task_id):
 
 # creates parameter mapping for GNPS workflow
 # BY M. WANG - miw023@cs.ucsd.edu
-def launch_workflow():
+def launch_workflow(workflow):
 	
+	# set general gnps params
 	parameters_map = {}
-	parameters_map["workflow"] = "MOLECULAR-LIBRARYSEARCH"
-	parameters_map["email"] = "alexander_jaffe@berkeley.edu"
-	parameters_map["uuid"] = "1DAB2BC6-6827-0001-9AB5-390F1E781419"
-	#parameters_map["protocol"] = "none"
-	parameters_map["library_on_server"] = "d.speclibs"
-	#parameters_map["desc"] = "Gold"
-	parameters_map["SEARCH_LIBQUALITY"] = 3
-	parameters_map["spec_on_server"] = "f.ajaffe/for_d3_vis.mgf"
-	parameters_map["tolerance.PM_tolerance"] = 1.5
-	parameters_map["tolerance.Ion_tolerance"] = 0.5
-	parameters_map["MIN_MATCHED_PEAKS"] = 6
-	parameters_map["SCORE_THRESHOLD"] = 0.7
+
 	parameters_map["ANALOG_SEARCH"] = 0
-	parameters_map["MAX_SHIFT_MASS"] = 100.0
-	parameters_map["TOP_K_RESULTS"] = 1
-	parameters_map["FILTER_STDDEV_PEAK_INT"] = 0
-	parameters_map["MIN_PEAK_INT"] = 50.0
-	parameters_map["FILTER_PRECURSOR_WINDOW"] = 1
+	parameters_map["email"] = "alexander_jaffe@berkeley.edu"
+	parameters_map["desc"] = "Query spectra for d3 viz."
 	parameters_map["FILTER_LIBRARY"] = 0
+	parameters_map["FILTER_PRECURSOR_WINDOW"] = 1
+	parameters_map["FILTER_STDDEV_PEAK_INT"] = 0
+	parameters_map["library_on_server"] = "d.speclibs"
+	parameters_map["MAX_SHIFT_MASS"] = 100.0
+	parameters_map["MIN_MATCHED_PEAKS"] = 6
+	parameters_map["MIN_PEAK_INT"] = 50.0
+	parameters_map["SCORE_THRESHOLD"] = 0.7
+	parameters_map["spec_on_server"] = "f.ajaffe/for_d3_vis.mgf"
+	parameters_map["tolerance.Ion_tolerance"] = 0.5
+	parameters_map["tolerance.PM_tolerance"] = 1.5
+	parameters_map["uuid"] = "1DAB2BC6-6827-0001-9AB5-390F1E781419"
 	parameters_map["WINDOW_FILTER"] = 1
+	#parameters_map["protocol"] = "none"
 	#parameters_map["TASK_ID_COMPARISON"] = task_comparison
 	#parameters_map["USER_ID_COMPARISON"] = "continuous"
+
+	# set workflow specific params
+	if workflow == "search":
+		parameters_map["SEARCH_LIBQUALITY"] = 3
+		parameters_map["TOP_K_RESULTS"] = 1
+		parameters_map["workflow"] = "MOLECULAR-LIBRARYSEARCH"
+	if workflow == "network":
+		parameters_map["CLUSTER_MIN_SIZE"] = 2
+		parameters_map["CREATE_CLUSTER_BUCKETS"] = 0
+		parameters_map["CREATE_TOPOLOGY_SIGNATURES"] = 0
+		parameters_map["FIND_MATCHES_IN_PUBLIC_DATA"] = 0
+		parameters_map["MAXIMUM_COMPONENT_SIZE"] = 0
+		parameters_map["MIN_MATCHED_PEAKS_SEARCH"] = 3
+		parameters_map["PAIRS_MIN_COSINE"] = 0.80
+		parameters_map["RUN_MSCLUSTER"] = "on"
+		parameters_map["TOP_K"] = 1
+		parameters_map["workflow"] = "METABOLOMICS-SNETS"
 
 	return(parameters_map)
 
 def main():
 
 	__author__ = "Alexander L. Jaffe"
-	parser = argparse.ArgumentParser(description='Gets chemical info from GNPS for a set of spectra.')
+	#parser = argparse.ArgumentParser(description='Gets chemical info from GNPS for a set of spectra.')
 	#parser.add_argument('-i','--input', help='Path to directory of mzxml.',required=True)
 	#args = parser.parse_args()
-	#in_dir = args.input
 	
-	#un = raw_input("GNPS username: ")
-	#pw = raw_input("GNPS password: ")
-	un = "ajaffe"
-	pw = "RivierA8"
+	un = raw_input("GNPS username: ")
+	pw = raw_input("GNPS password: ")
 	base_url = "gnps.ucsd.edu"
 
 	print "Logging in as user %s." %(un)
 	print "Uploading spectra file to FTP..."
 	ftp("upload", "../data/test.mgf", un, pw)
 	print "Invoking GNPS workflow..."
-	task_id = invoke_workflow(base_url, launch_workflow(), un, pw)
+	task_id = invoke_workflow(base_url, launch_workflow("network"), un, pw)
 	print "Submitted to GNPS with task ID %s." %(task_id)
 	json_results = wait_for_workflow_finish("gnps.ucsd.edu", task_id)
-	print "Task %s" %(json_results)
+	print "Task %s." %(json_results)
 	ftp("delete", "for_d3_vis.mgf", un, pw)
+	
 	# write out json results
 	out_file = open("../data/gnps.json", "w")
 	results_url = 'https://' + base_url + '/ProteoSAFe/result_json.jsp?task=' + task_id + '&view=view_all_annotations_DB'
 	out_file.write(json.dumps(json.loads(requests.get(results_url, verify=False).text)))
-	#out_file.write(json.dumps(json_results))
 	out_file.close()
 
 if __name__ == '__main__':
