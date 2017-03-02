@@ -36,8 +36,8 @@ def preprocess_sample(sample):
 			percentComposition= ms2_TIC/msI_TIC
 			#Normalize and log transform peak intensities in each scan
 			#intensities = normalize(np.log(1+np.asarray(scan['intensity array']).reshape(1,-1)), norm='l1')[0]
-			# for x in range(0,len(intensity_array)): 
-			# 	intensity_array[x]= intensity_array[x]/ms2_TIC	
+			for x in range(0,len(intensity_array)): 
+			 	intensity_array[x]= intensity_array[x]/ms2_TIC	
 			mzs = scan['m/z array']
 			num = int(scan['num'])
 			percentComposition= ms2_TIC/msI_TIC
@@ -111,14 +111,13 @@ if new_min < peak_min:
 if new_max > peak_max:
 	peak_max = new_max
 ordered_Peaks= orderedPercentComp(new_peak_data)
-#peak_data[sample] = new_peak_data
-#
+
 peak_data = vectorize_peak(peak_min, peak_max, new_peak_data, input_file)
 value_list=[]
 for key in peak_data.keys():
 	 value_list.append(peak_data[key])
 peak_data_2d= np.array(value_list)
-doPCA(peak_data_2d)#scaled_array)
+doPCA(peak_data_2d)
 #pca
 #f-set
 #t-sne 
