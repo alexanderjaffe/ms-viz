@@ -4,8 +4,7 @@ import sys
 import requests
 import json
 import time
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+import getpass
 
 def ftp(mode, _input, login, password):
 
@@ -34,6 +33,8 @@ def invoke_workflow(base_url, parameters, login, password):
 	username = login
 	password = password
 
+	# turn off verification warnings
+	requests.packages.urllib3.disable_warnings()
 	s = requests.Session()
 
 	payload = {
@@ -126,7 +127,7 @@ def main():
 	#args = parser.parse_args()
 	
 	un = raw_input("GNPS username: ")
-	pw = raw_input("GNPS password: ")
+	pw = getpass.getpass('Password: ')
 	base_url = "gnps.ucsd.edu"
 
 	print "Logging in as user %s." %(un)
