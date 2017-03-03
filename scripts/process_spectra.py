@@ -27,6 +27,7 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 					next_scan["sample"] = basename
 					next_scan.pop("intensity array")
 					next_scan.pop("m/z array")
+
 				scans.append(next_scan)
 		except:
 			break
@@ -72,6 +73,34 @@ def get_keepers(cmpd_table, spectra_file):
 	f2.close()
 	return(keepers)
 
+# convert list of processed spectra to mgf
+def spectra_as_mgf(spectra):
+
+	outfile = open("../data/spectra.mgf","w")
+	i = 0
+	for spectrum in spectra:
+		if i != 0: # separate entries
+			outfile.write("\n")
+		# write spectrum block
+		outfile.write("BEGIN IONS\n")
+		pre = spectrum["precursorMz"][0]
+		outfile.write("PEPMASS=%s %s\n" %(pre["precursorMz"], pre["precursorIntensity"]))
+		try:
+			outfile.write("CHARGE=%s%s\n" %(pre["precursorCharge"], spectrum["polarity"]))
+		except:
+			outfile.write("CHARGE=%s%s\n" %("?", spectrum["polarity"]))
+		outfile.write("MSLEVEL=2\n")
+		outfile.write("FILENAME=%s\n" %(spectrum["sample"]))
+		outfile.write("ACTIVATION=%s\n" %(pre["activationMethod"]))
+		outfile.write("INSTRUMENT=orbitrap\n")
+		#outfile.write("TITLE=%s\n")
+		outfile.write("SCANS=%s\n" %(spectrum["num"]))
+		for peak in spectrum["spectrum"]:
+			outfile.write(str(peak["mz"]) + " " + str(peak["i"]) + "\n")
+		outfile.write("END IONS\n")
+		i += 1
+	outfile.close()
+
 def main():
 
 	__author__ = "Alexander L. Jaffe"
@@ -110,6 +139,9 @@ def main():
 	with open(out_path, "w") as out_file:
 		out_file.write(json.dumps(final_json))
 	out_file.close()
+
+	# create mgf for gnps analysis
+	spectra_as_mgf(final_json)
 	
 if __name__ == '__main__':
 	main()
