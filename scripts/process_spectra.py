@@ -4,35 +4,6 @@ import argparse
 import glob
 import sys
 
-def retrieve_spectra(ms_run, basename, keepers_list):
-	
-	sample = mzxml.read(ms_run)
-	scans = []
-	while True:
-		try:
-			# get next scan
-			next_scan = sample.next()
-			# filter for keepers
-			if next_scan["num"] in keepers_list[basename].keys():
-				# convert np arrays to json-friendly lists, and round vals
-				ia = [round(val,2) for val in next_scan["intensity array"]]
-				mz = [round(val,2) for val in next_scan["m/z array"]]
-				# write peaks as json pairs
-				if len(ia) == len(mz):
-					spectrum = []
-					for i in range(len(mz)):
-						spectrum.append({"i":ia[i], "mz":mz[i]})
-					next_scan["spectrum"] = spectrum
-					next_scan["compound"] = keepers_list[basename][next_scan["num"]]
-					next_scan["sample"] = basename
-					next_scan.pop("intensity array")
-					next_scan.pop("m/z array")
-
-				scans.append(next_scan)
-		except:
-			break
-	return(scans)
-
 def get_keepers(cmpd_table, spectra_file):
 
    	with open(cmpd_table) as f:
@@ -71,7 +42,38 @@ def get_keepers(cmpd_table, spectra_file):
 					else:
 						keepers[sample][spectrum] = cmpd
 	f2.close()
+	
 	return(keepers)
+
+def retrieve_spectra(ms_run, basename, keepers_list):
+	
+	sample = mzxml.read(ms_run)
+	scans = []
+	while True:
+		try:
+			# get next scan
+			next_scan = sample.next()
+			# filter for keepers
+			if next_scan["num"] in keepers_list[basename].keys():
+				# convert np arrays to json-friendly lists, and round vals
+				ia = [round(val,2) for val in next_scan["intensity array"]]
+				mz = [round(val,2) for val in next_scan["m/z array"]]
+				# write peaks as json pairs
+				if len(ia) == len(mz):
+					spectrum = []
+					for i in range(len(mz)):
+						spectrum.append({"i":ia[i], "mz":mz[i]})
+					next_scan["spectrum"] = spectrum
+					next_scan["compound"] = keepers_list[basename][next_scan["num"]]
+					next_scan["sample"] = basename
+					next_scan.pop("intensity array")
+					next_scan.pop("m/z array")
+
+				scans.append(next_scan)
+		except:
+			break
+	
+	return(scans)
 
 # convert list of processed spectra to mgf
 def spectra_as_mgf(spectra):
@@ -104,19 +106,12 @@ def spectra_as_mgf(spectra):
 def main():
 
 	__author__ = "Alexander L. Jaffe"
-	parser = argparse.ArgumentParser(description='Converts a set of mzxml to json format for d3 viz.')
+	parser = argparse.ArgumentParser(description='Converts a set of mzxml to json format for d3 viz and mgf file for gnps querying.')
 	parser.add_argument('-i','--input', help='Path to directory of mzxml.',required=True)
 	parser.add_argument('-c','--compound_table', help='Path to filtered compound table.',required=True)
 	parser.add_argument('-s','--spectra_file', help='Path to spectra mapping file.',required=True)
-	#parser.add_argument('-o','--output', help='Path to output json.',required=False)
 
 	args = parser.parse_args()
-
-	'''if not args.output:
-		out_dir = "./data"
-	else:
-		out_dir = args.output'''
-
 	in_dir = args.input
 
 	# generate keepers list for each sample
@@ -128,13 +123,11 @@ def main():
 		# get file name
 		basename = sample.split("/")[(len(sample.split("/"))-1)].strip(".mzXML")
 		print "Processing " + basename + ".mzXML"
-		#out_path = out_dir + "/" + basename + ".json"
 		# convert to json and combine into one giant file
 		#final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)
 		final_json = final_json + retrieve_spectra(sample, basename, keepers_dict)
 		print "Total of %d spectra..." %(len(final_json))
 
-	#out_path = out_dir + "/" + "mzXML.json"
 	out_path = "../data/spectra.json"
 	with open(out_path, "w") as out_file:
 		out_file.write(json.dumps(final_json))

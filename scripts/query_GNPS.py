@@ -54,28 +54,9 @@ def invoke_workflow(base_url, parameters, login, password):
 		print(task_id)
 		return None
 
-# Waits for not running, then returns status
-# BY M. WANG - miw023@cs.ucsd.edu
-def wait_for_workflow_finish(base_url, task_id):
-	url = 'https://' + base_url + '/ProteoSAFe/status_json.jsp?task=' + task_id
-	json_obj = json.loads(requests.get(url, verify=False).text)
-	while (json_obj["status"] != "FAILED" and json_obj["status"] != "DONE"):
-		#print("Waiting for task: " + task_id)
-		print("Working...")
-		time.sleep(10)
-		try:
-			json_obj = json.loads(requests.get(url, verify=False).text)
-		except KeyboardInterrupt:
-			raise
-		except:
-			print("Exception In Wait")
-			time.sleep(1)
-
-	return json_obj["status"]
-
 # creates parameter mapping for GNPS workflow
-# BY M. WANG - miw023@cs.ucsd.edu
-def launch_workflow(workflow):
+# ADAPTED FROM M. WANG - miw023@cs.ucsd.edu
+def launch_workflow(username, workflow):
 	
 	# set general gnps params
 	parameters_map = {}
@@ -91,7 +72,7 @@ def launch_workflow(workflow):
 	parameters_map["MIN_MATCHED_PEAKS"] = 6
 	parameters_map["MIN_PEAK_INT"] = 50.0
 	parameters_map["SCORE_THRESHOLD"] = 0.7
-	parameters_map["spec_on_server"] = "f.ajaffe/for_d3_vis.mgf"
+	parameters_map["spec_on_server"] = "f." + username + "/for_d3_vis.mgf"
 	parameters_map["tolerance.Ion_tolerance"] = 0.5
 	parameters_map["tolerance.PM_tolerance"] = 1.5
 	parameters_map["uuid"] = "1DAB2BC6-6827-0001-9AB5-390F1E781419"
@@ -113,17 +94,36 @@ def launch_workflow(workflow):
 		parameters_map["MAXIMUM_COMPONENT_SIZE"] = 0
 		parameters_map["MIN_MATCHED_PEAKS_SEARCH"] = 3
 		parameters_map["PAIRS_MIN_COSINE"] = 0.80
-		parameters_map["RUN_MSCLUSTER"] = "on"
+		parameters_map["RUN_MSCLUSTER"] = "off"
 		parameters_map["TOP_K"] = 1
+		parameters_map["SEARCH_LIBQUALITY"] = 3
 		parameters_map["workflow"] = "METABOLOMICS-SNETS"
 
 	return(parameters_map)
+
+# Waits for not running, then returns status
+# BY M. WANG - miw023@cs.ucsd.edu
+def wait_for_workflow_finish(base_url, task_id):
+	url = 'https://' + base_url + '/ProteoSAFe/status_json.jsp?task=' + task_id
+	json_obj = json.loads(requests.get(url, verify=False).text)
+	while (json_obj["status"] != "FAILED" and json_obj["status"] != "DONE"):
+		print("Working...")
+		time.sleep(10)
+		try:
+			json_obj = json.loads(requests.get(url, verify=False).text)
+		except KeyboardInterrupt:
+			raise
+		except:
+			print("Exception In Wait")
+			time.sleep(1)
+
+	return json_obj["status"]
 
 def main():
 
 	__author__ = "Alexander L. Jaffe"
 	#parser = argparse.ArgumentParser(description='Gets chemical info from GNPS for a set of spectra.')
-	#parser.add_argument('-i','--input', help='Path to directory of mzxml.',required=True)
+	#parser.add_argument('-i','--input', help='Path to directory of mgf.',required=True)
 	#args = parser.parse_args()
 	
 	un = raw_input("GNPS username: ")
@@ -132,19 +132,32 @@ def main():
 
 	print "Logging in as user %s." %(un)
 	print "Uploading spectra file to FTP..."
-	ftp("upload", "../data/test.mgf", un, pw)
-	print "Invoking GNPS workflow..."
-	task_id = invoke_workflow(base_url, launch_workflow("network"), un, pw)
-	print "Submitted to GNPS with task ID %s." %(task_id)
-	json_results = wait_for_workflow_finish("gnps.ucsd.edu", task_id)
-	print "Task %s." %(json_results)
-	ftp("delete", "for_d3_vis.mgf", un, pw)
+	ftp("upload", "../data/spectra.mgf", un, pw)
 	
+	# run library search
+	print "Starting GNPS library search..."
+	params1 = launch_workflow(un, "search")
+	task_id1 = invoke_workflow(base_url, params1, un, pw)
+	print "Submitted to GNPS with task ID %s." %(task_id1)
+	json_results1 = wait_for_workflow_finish("gnps.ucsd.edu", task_id1)
+	print "Library search %s." %(json_results1)
+	
+	# run metabolomic networking
+	print "Starting GNPS metabolomic networking..."
+	params2 = launch_workflow(un, "search")
+	task_id2 = invoke_workflow(base_url, params2, un, pw)
+	print "Submitted to GNPS with task ID %s." %(task_id2)
+	json_results2 = wait_for_workflow_finish("gnps.ucsd.edu", task_id2)
+	print "Networking %s." %(json_results2)
+	
+	# remove input file
+	ftp("delete", "for_d3_vis.mgf", un, pw)
+
 	# write out json results
-	out_file = open("../data/gnps.json", "w")
-	results_url = 'https://' + base_url + '/ProteoSAFe/result_json.jsp?task=' + task_id + '&view=view_all_annotations_DB'
-	out_file.write(json.dumps(json.loads(requests.get(results_url, verify=False).text)))
-	out_file.close()
+	#out_file = open("../data/gnps.json", "w")
+	#results_url = 'https://' + base_url + '/ProteoSAFe/result_json.jsp?task=' + task_id + '&view=view_all_annotations_DB'
+	#out_file.write(json.dumps(json.loads(requests.get(results_url, verify=False).text)))
+	#out_file.close()
 
 if __name__ == '__main__':
 	main()
