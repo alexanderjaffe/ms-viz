@@ -158,7 +158,7 @@ def main():
 			json_results1 = wait_for_workflow_finish("gnps.ucsd.edu", task_id1)
 			print "Library search %s." %(json_results1)
 			# write results
-			url1 = 'https://' + base_url + '/ProteoSAFe/status_json.jsp?task=' + task_id1
+			url1 = 'https://' + base_url + '/ProteoSAFe/status.jsp?task=' + task_id1
 			out_file.write(basename + "\t" + "SEARCH\t"+json_results1+'\t' + url1 + '\n')
 		
 		if mode == "networking" or mode == "both":
@@ -169,11 +169,11 @@ def main():
 			json_results2 = wait_for_workflow_finish("gnps.ucsd.edu", task_id2)
 			print "Networking %s." %(json_results2)
 			# write results
-			url2 = 'https://' + base_url + '/ProteoSAFe/status_json.jsp?task=' + task_id2
+			url2 = 'https://' + base_url + '/ProteoSAFe/status.jsp?task=' + task_id2
 			out_file.write(basename + "\t" + "NETWORK\t"+json_results2 +'\t' + url2 + '\n')
 	
 		# remove input file
-		ftp("delete", basename, un, pw)
+		ftp("delete", sample, basename, un, pw)
 
 		# write out json results
 		#out_file = open("../data/gnps.json", "w")
@@ -181,7 +181,7 @@ def main():
 		#out_file.write(json.dumps(json.loads(requests.get(results_url, verify=False).text)))
 		#out_file.close()
 
-	outfile.close()
+	out_file.close()
 
 if __name__ == '__main__':
 	main()

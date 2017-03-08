@@ -134,30 +134,30 @@ def main():
 	print "Uploading spectra file to FTP..."
 	ftp("upload", "../data/test.mgf", un, pw)
 	
-	'''# run library search
+	# run library search
 	print "Starting GNPS library search..."
 	params1 = launch_workflow(un, "search")
 	task_id1 = invoke_workflow(base_url, params1, un, pw)
 	print "Submitted to GNPS with task ID %s." %(task_id1)
 	json_results1 = wait_for_workflow_finish("gnps.ucsd.edu", task_id1)
-	print "Library search %s." %(json_results1)'''
+	print "Library search %s." %(json_results1)
 	
-	# run metabolomic networking
+	'''# run metabolomic networking
 	print "Starting GNPS metabolomic networking..."
 	params2 = launch_workflow(un, "network")
 	task_id2 = invoke_workflow(base_url, params2, un, pw)
 	print "Submitted to GNPS with task ID %s." %(task_id2)
 	json_results2 = wait_for_workflow_finish("gnps.ucsd.edu", task_id2)
-	print "Networking %s." %(json_results2)
+	print "Networking %s." %(json_results2)'''
 	
 	# remove input file
 	ftp("delete", "for_d3_vis.mgf", un, pw)
 
 	# write out json results
-	#out_file = open("../data/gnps.json", "w")
-	#results_url = 'https://' + base_url + '/ProteoSAFe/result_json.jsp?task=' + task_id + '&view=view_all_annotations_DB'
-	#out_file.write(json.dumps(json.loads(requests.get(results_url, verify=False).text)))
-	#out_file.close()
+	out_file = open("../data/gnps_LS_raw.json", "w")
+	results_url = 'https://' + base_url + '/ProteoSAFe/result_json.jsp?task=' + task_id1 + '&view=view_all_annotations_DB'
+	out_file.write(json.dumps(json.loads(requests.get(results_url, verify=False).text)))
+	out_file.close()
 
 if __name__ == '__main__':
 	main()
