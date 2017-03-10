@@ -140,7 +140,7 @@ def main():
 	print "Logging in as user %s." %(un)
 
 	# open output file
-	out_file = open("gnps_results.txt", "w")
+	out_file = open("../data/gnps.log", "w")
 	out_file.write("file_name\tworkflow\tstatus\tURL\n")
 
 	for sample in glob.glob((in_dir+"/*[mzXML|mgf]")):

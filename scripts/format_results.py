@@ -6,7 +6,7 @@ def reformat_search(raw_json, keepers):
 	json_out = open("../data/gnps_LS_processed.json","w")
 
 	final_json = []
-	for line in raw_json["blockData"]:
+	for line in raw_json:
 		temp = {}
 		# select key/value pairs to keep
 		for keys,item in line.iteritems():
@@ -52,8 +52,8 @@ def main():
 	raw_json = json.load(in_file)
 
 	# define fields to keep from gnps response json
-	keepers = ["id", "#Scan#", "Compound_Name", "LibraryQualityString", "MQScore", \
-		"SharedPeaks", "TIC_Query", "SpecMZ", "LibMZ", "MassDiff", "Charge"]
+	keepers = ["id", "SpectrumFile", "#Scan#", "Compound_Name", "LibraryQualityString", \
+		"MQScore", "SharedPeaks", "TIC_Query", "SpecMZ", "LibMZ", "MassDiff", "Charge"]
 	
 	print "Processing library search for display..."
 	processed_json = reformat_search(raw_json, keepers)

@@ -76,9 +76,9 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 	return(scans)
 
 # convert list of processed spectra to mgf
-def spectra_as_mgf(spectra):
+def spectra_as_mgf(spectra, basename):
 
-	outfile = open("../data/spectra.mgf","w")
+	outfile = open("../data/" + basename + ".mgf","w")
 	i = 0
 	for spectrum in spectra:
 		if i != 0: # separate entries
@@ -125,16 +125,17 @@ def main():
 		print "Processing " + basename + ".mzXML"
 		# convert to json and combine into one giant file
 		#final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)
-		final_json = final_json + retrieve_spectra(sample, basename, keepers_dict)
+		results = retrieve_spectra(sample, basename, keepers_dict)
+		final_json = final_json + results
 		print "Total of %d spectra..." %(len(final_json))
 
+		# for each sample, create mgf for gnps analysis
+		spectra_as_mgf(results,basename)
+	
 	out_path = "../data/spectra.json"
 	with open(out_path, "w") as out_file:
 		out_file.write(json.dumps(final_json))
 	out_file.close()
-
-	# create mgf for gnps analysis
-	spectra_as_mgf(final_json)
 	
 if __name__ == '__main__':
 	main()
