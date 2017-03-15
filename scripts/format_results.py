@@ -1,5 +1,6 @@
 import argparse
 import json
+import pandas as pd
 
 def reformat_search(raw_json, keepers):
 
@@ -41,12 +42,19 @@ def tabularize_search(processed_json, fields):
 
 	table_out.close()
 
+# perform hierarchical clustering on cmpd table
+# then reformat for visualization input
+def cluster_and_melt(cmpd_table):
+
+	table = pd.read
+
+
 def main():
 
 	__author__ = "Alexander L. Jaffe"
-	#parser = argparse.ArgumentParser(description='Performs GNPS library search or molecular networking on spectra files.')
-	#parser.add_argument('-i','--input', help='File or directory containing spectra in mgf/mzxml format.',required=True)
-	#args = parser.parse_args()
+	parser = argparse.ArgumentParser(description='Reformats GNPS and compound table files for visualization.')
+	parser.add_argument('-i','--input', help='Path to filtered compound table.',required=True)
+	args = parser.parse_args()
 
 	in_file = open("../data/gnps_LS_raw.json")
 	raw_json = json.load(in_file)
@@ -55,9 +63,10 @@ def main():
 	keepers = ["id", "SpectrumFile", "#Scan#", "Compound_Name", "LibraryQualityString", \
 		"MQScore", "SharedPeaks", "TIC_Query", "SpecMZ", "LibMZ", "MassDiff", "Charge"]
 	
-	print "Processing library search for display..."
+	print "Processing library search and compound table for visualization..."
 	processed_json = reformat_search(raw_json, keepers)
 	tabularize_search(processed_json, keepers)
+	cluster_and_melt(args.input)
 	print "Done."
 
 if __name__ == '__main__':

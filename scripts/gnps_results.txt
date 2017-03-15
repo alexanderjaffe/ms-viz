@@ -1,3 +1,0 @@
-file_name	workflow	status	URL
-spectra.mgf	SEARCH	DONE	https://gnps.ucsd.edu/ProteoSAFe/status_json.jsp?task=1ebd892e6fbe4f10ba51eb954be95dfb
-test.mgf	SEARCH	DONE	https://gnps.ucsd.edu/ProteoSAFe/status_json.jsp?task=6d5b3c09d382465e8a7b6096d2b1fde2

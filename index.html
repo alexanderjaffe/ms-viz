@@ -2,7 +2,7 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Homework 3 - MyWorld Data</title>
+    <title>Mass Spec Viz</title>
 
     <!-- ADD Libraries-->
     <script src="libs/d3/d3.min.js" charset="utf-8"></script>
@@ -16,12 +16,6 @@
     <!-- Get some nice font-->
     <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>
 
-
-    <!--------------------------------->
-    <!-- FROM HERE ON IT IS HW3 stuff-->
-    <!--------------------------------->
-
-    <!-- add own vis classes-->
     <script src = "js/priovis.js"></script>
     <script src = "js/agevis.js"></script>
     <script src = "js/countvis.js"></script>
@@ -32,193 +26,122 @@
 
 </head>
 <body>
-    <div class="container">
-        <h1>Homework 3 - MyWorld 2015 Data Visualization</h1>
+    <div>
+        <h1>TraxLab Proteomics Discovery Platform</h1>
 
         <div class="row">
             <div class="col-md-8 col-sm-12">
-               <p> The following visualization shows you the votes for MyWorld 2015. You can select a time range to see changes in the distribution of votes und distribution of age of the voters.</p>
+               <p> Mouse-over heatmap cells to display compound information and MS2 spectrum. Click rows/columns to sort.</p>
             </div>
-
         </div>
-
         <div class="row">
-            <div class="col-md-2">
-                <!-- <button class="btn btn-sm btn-primary" id="fitInBtn"> <span class="glyphicon glyphicon-resize-horizontal"></span> reset zoom </button> -->
+            <div class="col-md-4" style = "width:300px">
+                <b>current selection:</b> <span id="brushInfo"></span>
             </div>
-
-            <div class="col-md-8" style = "width:300px">
-                <b>current brush:</b> <span id="brushInfo"></span>
+        </div>
+        <div class="row">
+            <div class="col-md-6" id="specVis">
             </div>
-            <div id = "mode">
+            <div class="col-md-6" id="radarVis">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3" id = "order">
               <form>
-              Mode:
+              Order:
                 <select>
-                  <option value="default" selected >Default</option>
-                  <option value="avg">Design Studio</option>
+                  <option value="sort" selected >sort by name</option>
+                  <option value="hclust">cluster</option>
                 </select>
               </form>
             </div>
-
-
+            <div class="col-md-3" id = "data_type">
+              <form>
+              Data Type:
+                <select>
+                  <option value="quant" selected >Quantitative</option>
+                  <option value="bin">Binary</option>
+                </select>
+              </form>
+            </div>
         </div>
-
-
-
         <div class="row">
-            <div class="col-md-9" id="countVis">
-            </div>
-            <div class="col-md-3" id="ageVis">
+            <div class="col-md-12" id="hmVis">
             </div>
         </div>
-
-        <div class="row">
-            <div class="col-md-12" id="prioVis">
-            </div>
-
-        </div>
-
-
-
-
-
-
     </div>
-
-
 
     <script>
         $(function(){ // this function is called after the HTML document is fully loaded
 
-
-            //==========================================
-            //--- HERE IS WHERE ALL THE MAGIC STARTS --
-            //==========================================
-
-
             // variables keeping global knowledge of the data
-            var allData = [];
-            var metaData = {};
+            var hm_data = [];
+            var spec_data = [];
             var MyEventHandler;
 
-            // this function can convert Date objects to a string
-            // it can also convert strings to Date objects
-            // see: https://github.com/mbostock/d3/wiki/Time-Formatting
-            var dateFormatter = d3.time.format("%Y-%m-%d");
-
-
-            // call this function after Data is loaded, reformatted and bound to the variables
+            // call this function after Data is loaded
             var initVis = function(){
 
                 MyEventHandler = new Object();
 
                 // add in visualizations
-                /*var count_vis = new CountVis(d3.select("#countVis"), allData, metaData, MyEventHandler, "default"); */
-                var age_vis = new HeatMap(d3.select("#ageVis"), allData, metaData);
+                var hm_vis = new HeatMap(d3.select("#hmVis"), hm_data, MyEventHandler);
                 /*var prio_vis = new PrioVis(d3.select("#prioVis"), allData, metaData,"default"); */
 
-
-                // TODO: bind the eventHandler to the Vis Objects
-                // events will be created from the CountVis object (nothing to do here)
-                // events will be consumed by the PrioVis and AgeVis object (binding should happen here)
-                /*$(MyEventHandler).bind("selectionChanged", function(event, pass){
-                    age_vis.onSelectionChange(pass);
-                    prio_vis.onSelectionChange(pass);
-
-                    // update brush text
-                    start = dateFormatter(pass["start"]);
-                    end = dateFormatter(pass["end"]);
-                    d3.select("#brushInfo").selectAll("text").remove()
-                    d3.select("#brushInfo").append("text").text(start + " to " + end)
-                }); */
-
-                /* $(MyEventHandler).bind("brushEmpty", function(event){
-                    console.log("hoo");
-                    d3.select("#prioVis").style("visibility", "hidden")
-                }) */
+                // bind eventHandlers to the Vis Objects
+                $(MyEventHandler).bind("selectionChanged", function(event, pass){
+                    hm_vis.onSelectionChange(pass);
+                });
+                $(MyEventHandler).bind("cellMouseover", function(event, pass){
+                    // spec_vis.onSelectionChange(pass);
+                });
 
             }
 
-            // call this function after both files are loaded -- error should be "null" if no error
-            var dataLoaded = function (error, _allData, _metaData, _spectra) {
+            // call this function after both files are loaded
+            // could apply data transformations here
+            var dataLoaded = function (error, _gnps_data, _spec_data, _hm_data) {
 
                 if (!error) {
-
-                    console.log(_spectra);
                     
-                    /*allData = _allData.map(function (d) {
-                                var res = {
-                                    time: dateFormatter.parse(d.day),
-                                    count: parseInt(d["count(*)"])
-                                };
-
-                                keys_nos = d3.range(0,16)
-                                // generate names of keys
-                                keys_name = [] 
-                                keys_nos.map(function(k){keys_name.push("sum(p" + k + ")")})
-                                // get priority counts
-                                res.prios = []
-                                keys_name.map(function(l){res.prios.push(d[l])})
-
-                                // This is ONE way to create an array of length 100
-                                // and set every value to "0")
-                                res.ages = d3.range(0,100). map(function(){return 0;})
-
-                                // for each age object write over res.ages 0
-                                d.age.forEach(function(k,i){
-                                    // remove weird stuff
-                                    if (k.age > 99 || k.age == ""){}
-                                    else {
-                                        res.ages[k.age] = k["count(*)"]
-                                    }
-                                })
-
-                                return res;
-                            }
-                    ) */
+                    /*allData = _allData.map(function(d){
+                    }) */
                     
-                    allData = _spectra
-                    metaData = _metaData;
-                    //console.log(allData);
+                    hm_data = _hm_data;
+                    spec_data = _spec_data
+                    gnps_data = _gnps_data
+                    
+                    console.log(hm_data);
+                    console.log(spec_data);
+                    console.log(gnps_data);
+
                     initVis();
                 }
             }
 
             var startHere = function(){
 
-            // load datasets with queue.js
-            // help from https://github.com/mbostock/queue
-            queue()
-                .defer(d3.json, 'data/perDayData.json')
-                .defer(d3.json, 'data/MYWorld_fields.json')
-                .defer(d3.tsv, 'data/data_heatmap.tsv')
-                .await(function(error,file1,file2, file3){dataLoaded(error,file1,file2, file3)});
-            }
-
-            // define behavior on changing mode
-            /*d3.select("#mode").select("select").on("change", function(){
-                mode_id = d3.select(this).property("value")
-                // get rid of old count vis - need to remove existing brush if any
-                d3.select("#countVis").select("svg").remove();
-                var count_vis = new CountVis(d3.select("#countVis"), allData, metaData, MyEventHandler, mode_id);
-                // get rid of old prio vis
-                d3.select("#prioVis").select("svg").remove();
-                // add in new prio vis
-                var prio_vis = new PrioVis(d3.select("#prioVis"), allData, metaData, mode_id);
-                // hide priovis on initialization of avg mode
-                if (mode_id == "avg"){d3.select("#prioVis").style("visibility", "hidden") 
+                // load datasets with queue.js
+                queue()
+                    .defer(d3.json, 'data/gnps_LS_processed.json')
+                    .defer(d3.json, 'data/perDayData.json')
+                    .defer(d3.tsv, 'data/data_heatmap.tsv')
+                    .await(function(error,file1,file2, file3){dataLoaded(error,file1,file2,file3)});
                 }
-                // else add it back
-                else {d3.select("#prioVis").style("visibility", "visible")}
-                //rebind event handler
-                $(MyEventHandler).bind("selectionChanged", function(event, pass){
-                    prio_vis.onSelectionChange(pass);
-                })
-            }); */
+                
+                // define button behaviors
+                d3.select("#order").select("select").on("change",function(){
+                    pass = {type:"order", value:this.value}
+                    $(MyEventHandler).trigger("selectionChanged", pass)
+                });
+                d3.select("#data_type").select("select").on("change",function(){
+                    pass = {type:"data_type", value:this.value}
+                    $(MyEventHandler).trigger("selectionChanged", pass)
+                });
 
-            startHere();
-
+                startHere();
         })
+
     </script>
 </body>
 </html>
