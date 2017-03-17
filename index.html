@@ -9,10 +9,13 @@
     <script src="libs/jquery/jquery-2.1.1.min.js" charset="utf-8"></script>
     <script src="libs/bootstrap/js/bootstrap.min.js" charset="utf-8"></script>
     <script src="http://d3js.org/queue.v1.min.js"></script>
-
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore.js"></script>
+    
     <!--Stylesheets-->
     <link rel="stylesheet" type="text/css" href="libs/bootstrap/css/bootstrap.min.css">
-
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    
     <!-- Get some nice font-->
     <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>
 
@@ -31,7 +34,7 @@
 
         <div class="row">
             <div class="col-md-8 col-sm-12">
-               <p> Mouse-over heatmap cells to display compound information and MS2 spectrum. Click rows/columns to sort.</p>
+               <p> Mouse-over heatmap cells to display compound information and MS2 spectrum. Click rows to sort by sample, <br> on cells to sort by compound.</p>
             </div>
         </div>
         <div class="row">
@@ -45,6 +48,20 @@
             <div class="col-md-6" id="radarVis">
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-12" id="hmVis">
+            </div>
+        </div>
+        <!--<div class="container">
+            <div class="row">
+            <label class="checkbox-inline">
+                <input type="checkbox" id="order" checked data-on="Sorted" data-off="Clustered" data-toggle="toggle"> Order
+            </label>
+            <label class="checkbox-inline">
+                <input type="checkbox" id="data_type" data-on="Quantitative" checked data-off="Binary" data-toggle="toggle"> Data Type
+            </label>
+            </div>
+        </div> -->
         <div class="row">
             <div class="col-md-3" id = "order">
               <form>
@@ -63,10 +80,6 @@
                   <option value="bin">Binary</option>
                 </select>
               </form>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12" id="hmVis">
             </div>
         </div>
     </div>
@@ -125,19 +138,23 @@
                 queue()
                     .defer(d3.json, 'data/gnps_LS_processed.json')
                     .defer(d3.json, 'data/perDayData.json')
-                    .defer(d3.tsv, 'data/data_heatmap.tsv')
+                    .defer(d3.tsv, 'data/cmpd_table_melted.tsv')
                     .await(function(error,file1,file2, file3){dataLoaded(error,file1,file2,file3)});
                 }
-                
+
                 // define button behaviors
                 d3.select("#order").select("select").on("change",function(){
+                    console.log("test")
                     pass = {type:"order", value:this.value}
                     $(MyEventHandler).trigger("selectionChanged", pass)
                 });
                 d3.select("#data_type").select("select").on("change",function(){
+                    console.log("toggle")
                     pass = {type:"data_type", value:this.value}
                     $(MyEventHandler).trigger("selectionChanged", pass)
                 });
+
+                console.log(d3.select("#order"))
 
                 startHere();
         })

@@ -46,8 +46,22 @@ def tabularize_search(processed_json, fields):
 # then reformat for visualization input
 def cluster_and_melt(cmpd_table):
 
-	table = pd.read
-
+	table = pd.read_csv(cmpd_table)
+	# get row and col names
+	r = list(table.Compound)
+	c = list(table.columns)
+	
+	# melt to give each observation its own entry
+	melt = pd.melt(table, id_vars=["Compound", "Mass"], value_vars=list(table.columns[2:len(table.columns)]))
+	# transpose
+	melt["col"] = melt["Compound"].apply(lambda x: r.index(x) + 1)
+	melt["row"] = melt["variable"].apply(lambda x: c.index(x) - 1)
+	# small edits
+	melt["var"] = melt["variable"].apply(lambda x: x.split("/")[(len(x.split("/"))-1)].replace(".mzXML",""))
+	melt["cmpd"] = melt["Compound"].apply(lambda x: x.replace("compound_","#"))
+	melt2 = melt.drop(["variable", "Compound"], 1)
+	# write it out
+	melt2.to_csv("../data/cmpd_table_melted.tsv", sep="\t", index=False)
 
 def main():
 
@@ -64,8 +78,8 @@ def main():
 		"MQScore", "SharedPeaks", "TIC_Query", "SpecMZ", "LibMZ", "MassDiff", "Charge"]
 	
 	print "Processing library search and compound table for visualization..."
-	processed_json = reformat_search(raw_json, keepers)
-	tabularize_search(processed_json, keepers)
+	#processed_json = reformat_search(raw_json, keepers)
+	#tabularize_search(processed_json, keepers)
 	cluster_and_melt(args.input)
 	print "Done."
 
