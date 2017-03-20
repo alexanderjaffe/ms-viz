@@ -1,15 +1,24 @@
-from __future__ import division
 from pyteomics import mzxml
-import sys
 import math
-from operator import itemgetter
 import numpy as np
-import csv
-from itertools import izip
+import sys
+from scipy.sparse import csr_matrix, find
+from sys import getsizeof
+from sklearn.preprocessing import normalize
+from operator import itemgetter
+import argparse
 
-
-
-input_file=sys.argv[1]
+''' fast calculation of cosine similarity (csr)'''
+def fast_cosine_csr(u,v): 
+    uData, vData = u.data, v.data
+    denominator = math.sqrt(np.sum(uData**2) * np.sum(vData**2))
+    if denominator>0:
+        uCol, vCol = u.indices, v.indices 
+        uI = uData[np.in1d(uCol, vCol)]
+        vI = vData[np.in1d(vCol, uCol)]
+        return np.dot(uI,vI)/denominator
+    else:
+        return float("inf")
 
 ''' fast calculation of cosine similarity '''
 def fast_cosine(u,v): 
@@ -18,7 +27,6 @@ def fast_cosine(u,v):
         return np.dot(u,v)/denominator
     else:
         return float("inf")
-
 
 '''Retrieves all MS2 spectra from a sample file. log-normalize all MS2 base peak intensities.'''
 def preprocess_sample(sample):
@@ -32,9 +40,25 @@ def preprocess_sample(sample):
 			break
 
 	print str(len(scans)) + " scans found in " + sample
+	if len(scans) < 10:
+		print "Taking %s sample out" %(sample)
+		raise
+	
 	base_peaks = {}
 	all_peaks = []
-	msI_list= {}
+	
+	# get frequency of ion ms2 by mz
+	mz_list = []
+	for scan in scans:
+		if scan['msLevel'] == '2':
+			base_mz = scan['precursorMz'][0]['precursorMz']
+			mz_list.append(int(base_mz)*10000)
+
+	mz_dict = {x:mz_list.count(x) for x in mz_list}
+
+	init_scans = 0
+	end_scans = 0
+
 	for scan in scans:
 		if scan['msLevel'] == '1':
 			num= scan['num']
@@ -65,29 +89,19 @@ def preprocess_sample(sample):
 	all_peaks = None
 	scans = None
 	r = None
-	
+
+	print "%d scans filtered out by ms2 freq" %(init_scans - end_scans)
+
 	#Returns a list of MS2 spectra organized by scan #, and the largest and smallest precursor peaks across all MS2 in this file.
 	return peak_min, peak_max, base_peaks, msI_list
 
-""" 
-	Orders Peak data by percent composition of identified compounds that have MSII 
-"""
-# def orderedPercentComp(new_peak_data): 
-# 	percentComp_list=[]
-# 	for key in new_peak_data.keys(): 
-# 		percentComp_list.append((new_peak_data[key]['num'],new_peak_data[key]['Percent of Sample'],new_peak_data[key]['MS2 TIC']))
-# 	lis= sorted(percentComp_list,key=lambda x: x[1], reverse=True)
-# 	return lis
-
-
-''' 
-	F-test clustering method 
 '''
+(1) Converts all of the MS2 peak lists in a sample to a vectorized format.
+(2) Removes non-unique MS2 spectra (precursor mass delta of 3 mz; cosine similarity > 0.97)
+(3) Creates a weighted consensus spectra for near-identical MS2 spectra
+'''
+def vectorize_peak(peak_min, peak_max, sample_data, sample_name):	
 
-	
-
-
-def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):	
 	#initializes peak vector (intervals of 0.1 so multiple all values by 10)
 	vector_length = ( peak_max - peak_min ) * 10
 	peak_vectors_list = []
@@ -103,25 +117,25 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 			pos = int((math.floor(p*10)/10 - peak_min) * 10)
 			peak_vector[pos] = scan['intensities'][i]
 			i += 1
+
 		peak_vectors[scan['num']] = peak_vector
-
 	  	peak_vectors_list.append(scan['num'])
-		new_peaks_list = None
 
-	print "Running comparison..."
+	new_peaks_list = None
+
+	print "Finding unique peaks in sample..."
 	# #Remove non-unique peaks; peaks that are most identical are grouped and the most intense peak from each group is kept.
 	#Only compare peaks that have masses within ~3 DA of each other?
 	similarities = []
 	already_calculated = []
-	peak_vectors_family_unique = []
+	peak_vectors_unique = []
 
-	print "Finding spectra in same families..."
 	f = open('sims_new', 'a+')
 	for scan in peak_vectors_list:
 		found = False
 		#Compare to every other scan < this scan's mz + 1.5 Da
-		for i in xrange(len(peak_vectors_family_unique)-1, -1, -1):
-			scan2 = peak_vectors_family_unique[i]
+		for i in xrange(len(peak_vectors_unique)-1, -1, -1):
+			scan2 = peak_vectors_unique[i]
 			mass_diff = sample_data[scan]['base_mz'] - sample_data[scan2[0]]['base_mz']
 			if mass_diff <= 1.5:
 				#Calculate cosine similarity of these two scans' peak vectors
@@ -129,7 +143,7 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				f.write(str(sim) + " ")
 
 				if sim >= 0.90:
-					peak_vectors_family_unique[i].append(scan)
+					peak_vectors_unique[i].append(scan)
 					found = True
 					break
 			else:
@@ -137,44 +151,13 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 
 		#Not similar to any in our list of unique peaks; add to unique list
 		if not found:
-			peak_vectors_family_unique.append([scan])
+			peak_vectors_unique.append([scan])
 	f.close()
-	print "done!"
-
-	# print "Finding unique peaks in sample..."
-	# peak_vectors_unique=[]
-	# g = open('sims_new_CAMS', 'a+')
-	# for scan in peak_vectors_list:
-	# 	found = False
-	# 	#Compare to every other scan < this scan's mz + 1.5 Da
-	# 	""" WHAT THE CORN"""
-	# 	for i in xrange(len(peak_vectors_unique)-1, -1, -1):
-	# 		scan2 = peak_vectors_unique[i]
-	# 		mass_diff = sample_data[scan]['base_mz'] - sample_data[scan2[0]]['base_mz']
-	# 		if mass_diff <= 1.5:
-	# 			#Calculate cosine similarity of these two scans' peak vectors
-	# 			weight= doCAMS(sample_data[scan], sample_data[scan2[0]])
-	# 			print weight
-	# 			g.write(str(weight) + " ")
-
-	# 			if weight >= 30:
-	# 				print "binned!"
-	# 				peak_vectors_unique[i].append(scan)
-	# 				found = True
-	# 				break
-	# 		else:
-	# 			break
-
-	# 	#Not similar to any in our list of unique peaks; add to unique list
-	# 	if not found:
-	# 		peak_vectors_unique.append([scan])
-	# g.close()
-	# print "done!"
 	#Create final data for this sample, return
 	#Create consensus peaks for each "compound" (group of identical scans)
-	print str(len(peak_vectors_family_unique))  + " unique clustered compounds found in this sample."
+	print str(len(peak_vectors_unique))  + " unique clustered compounds found in this sample."
 	final_peaks = {}
-	for scan_group in peak_vectors_family_unique:
+	for scan_group in peak_vectors_unique:
 		if len(scan_group) > 1:
 			"""Averages precursor intensity within sample over time with respect to the MS1 TIC """
 			biggest_mz = 0
@@ -235,12 +218,7 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 			peak_data['vector'] = csr_matrix(peak_vectors[scan1]) #Store only as a COO matrix
 			peak_data['origin'] = str(peak_data['num'])
 			peak_data['percent composition']= peak_data['precursor_intensity']/peak_data['MSI TIC'] 
-
-
 	return final_peaks
-
-
-
 
 '''
 Compares all ms2 between samples and creates a compound abundance table for all compounds across all samples.
@@ -318,7 +296,7 @@ def compare_samples(samples_data, output_file):
 					found = True
 					break
 			if found:
-				line = line + str(compound['percent composition']) + ","
+				line = line + str(compound['percent compostion']) + ","
 			else:
 				line = line + "0,"
 		line = line.rstrip(",")
@@ -327,19 +305,65 @@ def compare_samples(samples_data, output_file):
 	f.close()
 	f2.close()
 
+def main():
 
 
-peak_min = 999999999
-peak_max = 0
-	#peak_data = {}
-new_min, new_max, new_peak_data,msI_list = preprocess_sample(input_file)
-if new_min < peak_min:
-	peak_min = new_min
-if new_max > peak_max:
-	peak_max = new_max
+	#Read in sample data from mapping file
+	__author__ = "Alex Crits-Christoph"
+	parser = argparse.ArgumentParser(description='Processes a list of mzXML files as described in a mapping file to cluster and compare spectra across samples.')
+	parser.add_argument('-i','--input', help='Path to input mapping file (tab separated, "file	sample	grouping" 3+ column header',required=True)
+	parser.add_argument('-f','--filter_singletons', help="Do not include compounds that aren't replicated by at least 2 scans for a given sample. (similar to GNPS clusters)",required=False)
 
+	parser.add_argument('-o','--output', help='Name of output file (default: compound_table.txt)',required=False)
 
-peak_data = vectorize_peak(peak_min, peak_max, new_peak_data, input_file,msI_list)
+	args = parser.parse_args()
 
+	if not args.output:
+		output_file = "compound_table.txt"
+	else:
+		output_file = args.output
 
+	mapping_file = args.input
 
+	#Get the list of sample files from the mapping file.
+	samples = []
+	f = open(mapping_file)
+	i = 0 
+	for line in f.readlines():
+		if i != 0:
+			samples.append(line.split("\t")[0])
+		else:
+			i += 1
+	f.close()
+
+	#Preprocess all samples
+
+	#Get min and max peaks across all MS2 in all samples in our dataset.
+	peak_min = 999999999
+	peak_max = 0
+	peak_data = {}
+	
+	#Get MS2 peak data for all samples in this dataset.
+	for sample in samples:
+		
+		try:
+			new_min, new_max, new_peak_data,msI_list = preprocess_sample(sample)
+		except:
+			continue
+
+		if new_min < peak_min:
+			peak_min = new_min
+		if new_max > peak_max:
+			peak_max = new_max
+		peak_data[sample] = new_peak_data
+
+	#Calculate vectors for all unique MS2 in each sample.
+	for sample in peak_data:
+		peak_data[sample] = vectorize_peak(peak_min, peak_max, peak_data[sample], sample)
+
+	#Compare samples
+	# print "Comparing samples..."	
+	compare_samples(peak_data, output_file)
+
+if __name__ == '__main__':
+	main()
