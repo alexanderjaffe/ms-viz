@@ -47,12 +47,11 @@ def preprocess_sample(sample):
 			base_mz = scan['precursorMz'][0]['precursorMz']
 			precursor_intensity = scan['precursorMz'][0]['precursorIntensity']
 			intensity_array=scan['intensity array'].tolist()
-
 			msI_TIC= scans[ms1_scan_num]['totIonCurrent']
 			ms2_TIC= scan['totIonCurrent']
 			percentComposition= precursor_intensity/msI_TIC
 			for x in range(0,len(intensity_array)): 
-			 	intensity_array[x]= math.log(intensity_array[x]/ms2_TIC)	
+			  	intensity_array[x]= intensity_array[x]/float(ms2_TIC)	
 			mzs = scan['m/z array']
 			num = int(scan['num'])
 			percentComposition= ms2_TIC/msI_TIC
@@ -142,63 +141,53 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 	f.close()
 	print "done!"
 
-	print "Finding unique peaks in sample..."
-	peak_vectors_unique=[]
-	g = open('sims_new_CAMS', 'a+')
-	for scan in peak_vectors_list:
-		found = False
-		#Compare to every other scan < this scan's mz + 1.5 Da
-		""" WHAT THE CORN"""
-		for i in xrange(len(peak_vectors_unique)-1, -1, -1):
-			scan2 = peak_vectors_unique[i]
-			mass_diff = sample_data[scan]['base_mz'] - sample_data[scan2[0]]['base_mz']
-			if mass_diff <= 1.5:
-				#Calculate cosine similarity of these two scans' peak vectors
-				weight= doCAMS(sample_data[scan], sample_data[scan2[0]])
-				print weight
-				g.write(str(weight) + " ")
+	# print "Finding unique peaks in sample..."
+	# peak_vectors_unique=[]
+	# g = open('sims_new_CAMS', 'a+')
+	# for scan in peak_vectors_list:
+	# 	found = False
+	# 	#Compare to every other scan < this scan's mz + 1.5 Da
+	# 	""" WHAT THE CORN"""
+	# 	for i in xrange(len(peak_vectors_unique)-1, -1, -1):
+	# 		scan2 = peak_vectors_unique[i]
+	# 		mass_diff = sample_data[scan]['base_mz'] - sample_data[scan2[0]]['base_mz']
+	# 		if mass_diff <= 1.5:
+	# 			#Calculate cosine similarity of these two scans' peak vectors
+	# 			weight= doCAMS(sample_data[scan], sample_data[scan2[0]])
+	# 			print weight
+	# 			g.write(str(weight) + " ")
 
-				if weight >= 30:
-					print "binned!"
-					peak_vectors_unique[i].append(scan)
-					found = True
-					break
-			else:
-				break
+	# 			if weight >= 30:
+	# 				print "binned!"
+	# 				peak_vectors_unique[i].append(scan)
+	# 				found = True
+	# 				break
+	# 		else:
+	# 			break
 
-		#Not similar to any in our list of unique peaks; add to unique list
-		if not found:
-			peak_vectors_unique.append([scan])
-	g.close()
-	print "done!"
+	# 	#Not similar to any in our list of unique peaks; add to unique list
+	# 	if not found:
+	# 		peak_vectors_unique.append([scan])
+	# g.close()
+	# print "done!"
 	#Create final data for this sample, return
 	#Create consensus peaks for each "compound" (group of identical scans)
 	print str(len(peak_vectors_family_unique))  + " unique clustered compounds found in this sample."
 	final_peaks = {}
 	for scan_group in peak_vectors_family_unique:
 		if len(scan_group) > 1:
-			
-
-
-			scan_group[] 
-
-			consensus_peak = peak_vectors[scan_group[0]]
-			msI_TIC_total= 0
-			precursor_intensity_total=0
-
-			#Get scan in this group with biggest MS1 base peak intensity
+			"""Averages precursor intensity within sample over time with respect to the MS1 TIC """
 			biggest_mz = 0
 			min_mz= 9999999 
 			max_mz=0
+
+			#creates range of mz values within group to compare MSI mzs to 
 			for scan in scan_group:
 				temp_num= sample_data[scan]['base_mz']
-
 				if temp_num>max_mz: 
 					max_mz= temp_num
 				if temp_num<min_mz: 
 					min_mz=temp_num
-				#msI_TIC_total+= float(sample_data[scan]['MSI TIC'])
-				precursor_intensity_total+= float(sample_data[scan][precursor_intensity])
 				if sample_data[scan]['base_mz'] > biggest_mz:
 					biggest_mz = sample_data[scan]['base_mz']
 			
@@ -208,8 +197,9 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 			for msI in msI_list: 
 				mzs= msI['mzs']
 				intensities= msI['intensity']
+				# compares mz values in MSI to mz max and min within group
 				for mz in mzs: 
-					if (mz<=max_mz and mz=>min_mz): 
+					if (mz<=max_mz and mz>=min_mz): 
 						mz_num_list.append(msI["num"])
 						ms2_intensity_list.append(intensities[mzs.index(mz)])
 			msI_TIC_sum=0
@@ -220,10 +210,6 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				ms2_intensity_sum+= intensity
 
 			percentComp= ms2_intensity_sum/msI_TIC_sum
-
-			
-
-
 
 
 			#Create consensus spectrum
@@ -356,5 +342,4 @@ if new_max > peak_max:
 peak_data = vectorize_peak(peak_min, peak_max, new_peak_data, input_file,msI_list)
 
 
-#f-set
 
