@@ -1,6 +1,8 @@
 import argparse
 import json
 import pandas as pd
+import scipy.cluster.hierarchy as hac
+import numpy as np
 
 def reformat_search(raw_json, keepers):
 
@@ -55,11 +57,25 @@ def cluster_and_melt(cmpd_table):
 	melt = pd.melt(table, id_vars=["Compound", "Mass"], value_vars=list(table.columns[2:len(table.columns)]))
 	# transpose
 	melt["col"] = melt["Compound"].apply(lambda x: r.index(x) + 1)
+	# -1 bc there are two other vars ahead of 1st in vector
 	melt["row"] = melt["variable"].apply(lambda x: c.index(x) - 1)
 	# small edits
 	melt["var"] = melt["variable"].apply(lambda x: x.split("/")[(len(x.split("/"))-1)].replace(".mzXML",""))
 	melt["cmpd"] = melt["Compound"].apply(lambda x: x.replace("compound_","#"))
 	melt2 = melt.drop(["variable", "Compound"], 1)
+	
+	# perform hierarchical clustering on both axes
+	t1 = np.matrix(table.set_index(["Compound","Mass"]))
+	samp_clust = hac.linkage(t1, "ward")
+	t1t = np.transpose(t1)
+	cmpd_clust = hac.linkage(t1t, "ward")
+	# add one to account for 0 indexing
+	hcols = {(list(hac.leaves_list(samp_clust)).index(x) + 1):(x+1) for x in list(hac.leaves_list(samp_clust))}
+	hrows = {(list(hac.leaves_list(cmpd_clust)).index(x)+1):(x+1) for x in list(hac.leaves_list(cmpd_clust))}
+	# add in hclust indices - account for 0 index
+	melt2["hrow"] = melt2["row"].apply(lambda x: hrows[x])
+	melt2["hcol"] = melt2["col"].apply(lambda x: hcols[x])
+	
 	# write it out
 	melt2.to_csv("../data/cmpd_table_melted.tsv", sep="\t", index=False)
 

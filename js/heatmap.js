@@ -52,6 +52,8 @@ HeatMap.prototype.wrangleData = function(){
             row:   +parseInt(d.row),
             col:   +parseInt(d.col),
             value: +parseInt(d.value),
+            hrow: +parseInt(d.hrow),
+            hcol: +parseInt(d.hcol),
             sample: d.var,
             cmpd: d.cmpd,
             mass: d.Mass
@@ -60,7 +62,7 @@ HeatMap.prototype.wrangleData = function(){
     })
 
     this.displayData = this.intData.filter(function(d){
-        if (d.col > 100){return false}
+        if (d.col > 400){return false}
             else {return true}
     })
 
@@ -95,8 +97,8 @@ HeatMap.prototype.updateVis = function(){
     this.rowLabel = _.uniq(this.displayData.map(function(d){return d.sample})).sort()
     this.colLabel = _.uniq(this.displayData.map(function(d){return d.cmpd})).sort()
     // get position info for rows/cols
-    //this.rowinfo = _.uniq(this.displayData, function(d){return d.sample})
-    //this.colinfo = _.uniq(this.displayData, function(d){return d.cmpd})
+    this.rowinfo = _.uniq(this.displayData, function(d){return d.sample})
+    this.colinfo = _.uniq(this.displayData, function(d){return d.cmpd})
 
     // col label tweak factor
     this.col_adjust = 2;
@@ -109,10 +111,8 @@ HeatMap.prototype.updateVis = function(){
         .append("text")
         .text(function (d) { return d.slice(1,15); })
         .attr("x", 0)
-        //.attr("y", function (d, i) { return that.hcrow.indexOf(i+1) * that.cellSize + 1.5 ; })
         .attr("y", function(d,i){return i*that.cellSize;})
         .style("text-anchor", "end")
-        //.attr("transform", "translate(-6," + that.cellSize / 1.5 + ")")
         .attr("transform", "translate(-6," + that.cellSize/1.5 + ")")
         .attr("class", function (d,i) { return "rowLabel mono r"+i;} ) 
         .on("mouseover", function(d) {d3.select(this).classed("text-hover",true);})
@@ -127,7 +127,6 @@ HeatMap.prototype.updateVis = function(){
         .append("text")
         .text(function (d) { return d; })
         .attr("x", 0)
-        //.attr("y", function (d, i) { return that.hccol.indexOf(i+1) * that.cellWidth + that.col_adjust; })
         .attr("y", function(d,i){return i*that.cellWidth})
         .style("text-anchor", "left")
         .style("opacity","0")
@@ -143,8 +142,6 @@ HeatMap.prototype.updateVis = function(){
         .data(this.displayData,function(d){return d.row+":"+d.col;})
         .enter()
         .append("rect")
-        //.attr("x", function(d) { return that.hccol.indexOf(d.col) * that.cellWidth; })
-        //.attr("y", function(d) { return that.hcrow.indexOf(d.row) * that.cellSize; })
         .attr("x", function(d) { return (d.col-1) * that.cellWidth; })
         .attr("y", function(d) { return (d.row-1) * that.cellSize; })
         .attr("class", function(d){return "cell cell-border cr"+(d.row-1)+" cc"+(d.col-1);})
@@ -165,7 +162,7 @@ HeatMap.prototype.updateVis = function(){
                 .classed("text-highlight",function(c,ci){return ci==(d.col-1);});
 
             // trigger event for spectrum viz
-            //$(this.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample})
+            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample})
             
         })
         .on("mouseout", function(){
@@ -253,18 +250,14 @@ HeatMap.prototype.order = function(value){
         var t = this.svg.transition().duration(1200);
         
         t.selectAll(".cell")
-            //.attr("x", function(d) { return that.hccol.indexOf(d.col) * that.cellWidth; })
-            //.attr("y", function(d) { return that.hcrow.indexOf(d.row) * that.cellSize; });
-            .attr("x", function(d) { return (d.col -1) * that.cellWidth; })
-            .attr("y", function(d) { return (d.row -1) * that.cellSize; });
+            .attr("x", function(d) { return (d.hcol -1) * that.cellWidth; })
+            .attr("y", function(d) { return (d.hrow -1) * that.cellSize; });
 
         t.selectAll(".rowLabel")
-            //.attr("y", function (d, i) { return that.hcrow.indexOf(i+1) * that.cellSize; });
-            .attr("y", function (d, i) { return i * that.cellSize; });
+            .attr("y", function (d, i) { return that.cellSize * (that.getProp(that.rowinfo, "sample", d, "hrow") -1); });
 
         t.selectAll(".colLabel")
-            //.attr("y", function (d, i) { return that.hccol.indexOf(i+1) * that.cellWidth + that.col_adjust; });
-            .attr("y", function (d, i) { return i * that.cellWidth });
+            .attr("y", function (d, i) { return that.cellWidth * (that.getProp(that.colinfo, "cmpd", d, "hcol") - 1); });
     }
     
     else if (value=="sort"){
@@ -272,17 +265,13 @@ HeatMap.prototype.order = function(value){
         var t = this.svg.transition().duration(1200);
         
         t.selectAll(".cell")
-            //.attr("x", function(d) { return that.hccol.indexOf(d.col) * that.cellWidth; })
-            //.attr("y", function(d) { return that.hcrow.indexOf(d.row) * that.cellSize; });
             .attr("x", function(d) { return (d.col -1) * that.cellWidth; })
             .attr("y", function(d) { return (d.row -1) * that.cellSize; });
 
         t.selectAll(".rowLabel")
-            //.attr("y", function (d, i) { return that.hcrow.indexOf(i+1) * that.cellSize; });
             .attr("y", function (d, i) { return i * that.cellSize; });
 
         t.selectAll(".colLabel")
-            //.attr("y", function (d, i) { return that.hccol.indexOf(i+1) * that.cellWidth + that.col_adjust; });
             .attr("y", function (d, i) { return i * that.cellWidth});
    }
 }
