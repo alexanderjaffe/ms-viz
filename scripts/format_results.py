@@ -66,9 +66,9 @@ def cluster_and_melt(cmpd_table):
 	
 	# perform hierarchical clustering on both axes
 	t1 = np.matrix(table.set_index(["Compound","Mass"]))
-	samp_clust = hac.linkage(t1, "ward")
+	samp_clust = hac.linkage(t1, "average")
 	t1t = np.transpose(t1)
-	cmpd_clust = hac.linkage(t1t, "ward")
+	cmpd_clust = hac.linkage(t1t, "average")
 	# add one to account for 0 indexing
 	hcols = {(list(hac.leaves_list(samp_clust)).index(x) + 1):(x+1) for x in list(hac.leaves_list(samp_clust))}
 	hrows = {(list(hac.leaves_list(cmpd_clust)).index(x)+1):(x+1) for x in list(hac.leaves_list(cmpd_clust))}

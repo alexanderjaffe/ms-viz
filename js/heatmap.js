@@ -61,11 +61,12 @@ HeatMap.prototype.wrangleData = function(){
         };
     })
 
-    this.displayData = this.intData.filter(function(d){
+    /*this.displayData = this.intData.filter(function(d){
         if (d.col > 400){return false}
             else {return true}
-    })
-
+    })*/
+    
+    this.displayData = this.intData;
     console.log(this.displayData)
 
 }
@@ -79,7 +80,7 @@ HeatMap.prototype.updateVis = function(){
     this.dmax = d3.max(this.displayData.map(function(d){return d.value}))
     this.dmin = d3.min(this.displayData.map(function(d){return d.value}))
     // define color scale using displaydata
-    this.colorScale = d3.scale.linear()
+    this.colorScale = d3.scale.sqrt()
       .domain([this.dmin,this.dmax])
       .range(["white","blue"]);
     
@@ -88,8 +89,6 @@ HeatMap.prototype.updateVis = function(){
     this.row_number = d3.max(this.displayData.map(function(d){return d.row}))
     // use this to determine cell width/height
     this.cellWidth = this.width/this.col_number;
-    console.log(this.col_number)
-    console.log(this.cellWidth)
     this.cellSize = this.height/this.row_number;
     // this.legendElementWidth = this.cellSize*2.5;
 

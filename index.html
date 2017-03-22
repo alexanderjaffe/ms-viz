@@ -21,7 +21,7 @@
 
     <script src = "js/priovis.js"></script>
     <script src = "js/agevis.js"></script>
-    <script src = "js/countvis.js"></script>
+    <script src = "js/radarchart.js"></script>
     <script src = "js/heatmap.js"></script>
 
     <!-- add own stylesheet-->
@@ -99,6 +99,7 @@
 
                 // add in visualizations
                 var hm_vis = new HeatMap(d3.select("#hmVis"), hm_data, MyEventHandler);
+                var radar_vis = new RadarChart(d3.select("#radarVis"), hm_data, MyEventHandler);
                 /*var prio_vis = new PrioVis(d3.select("#prioVis"), allData, metaData,"default"); */
 
                 // bind eventHandlers to the Vis Objects
