@@ -7,7 +7,7 @@ HeatMap = function(_parentElement, _data, _eventHandler){
     this.data = _data;
     this.displayData = [];
     this.eventHandler = _eventHandler;
-    this.margin = {top: 75, right: 20, bottom: 10, left: 100},
+    this.margin = {top: 75, right: 20, bottom: 10, left: 120},
 
     // boot up the viz
     this.initVis();
@@ -26,6 +26,7 @@ HeatMap.prototype.initVis = function(){
     this.colorBuckets = 21,
     this.rowSortOrder=false;
     this.colSortOrder=false;
+    this.colorScale = d3.scale.linear()
     
     // add plotting space
     this.svg = this.parentElement.append("svg")
@@ -51,9 +52,10 @@ HeatMap.prototype.wrangleData = function(){
 
             row:   +parseInt(d.row),
             col:   +parseInt(d.col),
-            value: +parseInt(d.value),
+            value: +parseFloat(d.log_value),
             hrow: +parseInt(d.hrow),
             hcol: +parseInt(d.hcol),
+            ccol: +parseInt(d.ccol),
             sample: d.var,
             cmpd: d.cmpd,
             mass: d.Mass
@@ -67,7 +69,6 @@ HeatMap.prototype.wrangleData = function(){
     })*/
     
     this.displayData = this.intData;
-    console.log(this.displayData)
 
 }
 
@@ -78,12 +79,16 @@ HeatMap.prototype.updateVis = function(){
 
     // calculate min and max vals in data
     this.dmax = d3.max(this.displayData.map(function(d){return d.value}))
-    this.dmin = d3.min(this.displayData.map(function(d){return d.value}))
-    // define color scale using displaydata
-    this.colorScale = d3.scale.sqrt()
-      .domain([this.dmin,this.dmax])
+    // only search vals greater than zero
+    this.dmin = d3.min(this.displayData.filter(function(d){
+        if (d.value==0){return false}
+            else {return true}
+        })
+        .map(function(d){return d.value}))
+    // define color scale params using displaydata
+    this.colorScale.domain([this.dmin,this.dmax])
       .range(["white","blue"]);
-    
+
     // calculate min and max table indices
     this.col_number = d3.max(this.displayData.map(function(d){return d.col}))
     this.row_number = d3.max(this.displayData.map(function(d){return d.row}))
@@ -108,7 +113,7 @@ HeatMap.prototype.updateVis = function(){
         .data(this.rowLabel)
         .enter()
         .append("text")
-        .text(function (d) { return d.slice(1,15); })
+        .text(function (d) { return d.slice(0,15); })
         .attr("x", 0)
         .attr("y", function(d,i){return i*that.cellSize;})
         .style("text-anchor", "end")
@@ -146,7 +151,7 @@ HeatMap.prototype.updateVis = function(){
         .attr("class", function(d){return "cell cell-border cr"+(d.row-1)+" cc"+(d.col-1);})
         .attr("width", that.cellWidth)
         .attr("height", that.cellSize)
-        .style("fill", function(d) { return that.colorScale(d.value); })
+        .style("fill", function(d) { return that.getColor(d.value); })
         .on("click", function(d,i) {that.colSortOrder=!that.colSortOrder; that.sortbylabel("c",(d.col-1),that.colSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;})
         .on("mouseover", function(d){
             
@@ -160,16 +165,20 @@ HeatMap.prototype.updateVis = function(){
                     else {return 0}})
                 .classed("text-highlight",function(c,ci){return ci==(d.col-1);});
 
+            console.log(d)
             // trigger event for spectrum viz
-            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample})
+            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample, dtype:"on"})
             
         })
-        .on("mouseout", function(){
+        .on("mouseout", function(d){
             d3.select(this).classed("cell-hover",false);
             d3.selectAll(".rowLabel").classed("text-highlight",false);
             //d3.selectAll(".colLabel").classed("text-highlight",false);
             d3.selectAll(".colLabel").style("opacity", 0);
             d3.select("#tooltip").classed("hidden", true);
+
+            // trigger event for spectrum viz
+            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample, dtype:"off"})
         });
 
     /*var legend = this.svg.selectAll(".legend")
@@ -203,6 +212,14 @@ HeatMap.prototype.onSelectionChange= function(pass){
     if (type=="order"){this.order(pass["value"])}
     else if (type == "data_type"){this.colorize(pass["value"])}
 
+}
+
+HeatMap.prototype.getColor = function(x){
+  if (x == 0){
+    return "white";
+  }else{
+    return this.colorScale(x)
+  }
 }
 
 // method to return property of a row or column
@@ -244,6 +261,7 @@ HeatMap.prototype.order = function(value){
    
     var that = this;
 
+    // make transitions for sorting by hierarchical clustering
     if(value=="hclust"){
         
         var t = this.svg.transition().duration(1200);
@@ -258,8 +276,8 @@ HeatMap.prototype.order = function(value){
         t.selectAll(".colLabel")
             .attr("y", function (d, i) { return that.cellWidth * (that.getProp(that.colinfo, "cmpd", d, "hcol") - 1); });
     }
-    
-    else if (value=="sort"){
+    // make transitions for sorting by name
+    else if (value=="sort_name"){
 
         var t = this.svg.transition().duration(1200);
         
@@ -272,6 +290,17 @@ HeatMap.prototype.order = function(value){
 
         t.selectAll(".colLabel")
             .attr("y", function (d, i) { return i * that.cellWidth});
+   }
+   // make transitions for sorting by count across samples
+    else if (value=="sort_count"){
+
+        var t = this.svg.transition().duration(1200);
+        
+        t.selectAll(".cell")
+            .attr("x", function(d) { return (d.ccol -1) * that.cellWidth; })
+
+        t.selectAll(".colLabel")
+            .attr("y", function (d, i) { return that.cellWidth * (that.getProp(that.colinfo, "cmpd", d, "ccol") - 1); });
    }
 }
 

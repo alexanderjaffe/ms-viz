@@ -67,8 +67,9 @@
               <form>
               Order:
                 <select>
-                  <option value="sort" selected >sort by name</option>
+                  <option value="sort_name" selected >sort by name</option>
                   <option value="hclust">cluster</option>
+                  <option value="sort_count">sort by sample count</option>
                 </select>
               </form>
             </div>
@@ -105,10 +106,10 @@
                 // bind eventHandlers to the Vis Objects
                 $(MyEventHandler).bind("selectionChanged", function(event, pass){
                     hm_vis.onSelectionChange(pass);
+                    radar_vis.onSelectionChange(pass);
                 });
                 $(MyEventHandler).bind("cellMouseover", function(event, pass){
-                    // spec_vis.onSelectionChange(pass);
-                    console.log(pass);
+                    radar_vis.oncellMouse(pass);
                 });
 
             }
