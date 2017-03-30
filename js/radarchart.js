@@ -19,7 +19,7 @@ RadarChart.prototype.initVis = function(){
     
     var that = this;
 
-    this.height = this.width = window.innerHeight/2.5;
+    this.height = this.width = window.innerHeight/3;
     this.cradius = 5;
     this.factor = 1;
     this.factorLegend = .85;

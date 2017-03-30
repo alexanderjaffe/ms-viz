@@ -121,7 +121,7 @@ HeatMap.prototype.updateVis = function(){
         .attr("class", function (d,i) { return "rowLabel mono r"+i;} ) 
         .on("mouseover", function(d) {d3.select(this).classed("text-hover",true);})
         .on("mouseout" , function(d) {d3.select(this).classed("text-hover",false);})
-        .on("click", function(d,i) {that.rowSortOrder=!that.rowSortOrder; that.sortbylabel("r",i,that.rowSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;});
+        .on("click", function(d,i) {console.log("rowlabel fire"); that.rowSortOrder=!that.rowSortOrder; that.sortbylabel("r",i,that.rowSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;});
 
     // add in collabels
     var colLabels = this.svg.append("g")
@@ -240,7 +240,7 @@ HeatMap.prototype.colorize = function(value){
 
     var that = this;
 
-    var t = this.svg.transition().duration(1200);
+    var t = this.svg.transition().duration(1500);
 
     if (value == "quant"){
         t.selectAll(".cell")

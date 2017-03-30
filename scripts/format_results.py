@@ -96,8 +96,6 @@ def cluster_and_melt(cmpd_table, min_mz, max_mz):
 	hcols = {(x+1):(list(hac.leaves_list(samp_clust)).index(x) + 1) for x in list(hac.leaves_list(samp_clust))}
 	hrows = {(x+1):(list(hac.leaves_list(cmpd_clust)).index(x) +1) for x in list(hac.leaves_list(cmpd_clust))}
 	
-	print hrows
-	print np.shape(t1t)
 	# add in hclust indices - account for 0 index
 	melt2["hrow"] = melt2["row"].apply(lambda x: hrows[x])
 	melt2["hcol"] = melt2["col"].apply(lambda x: hcols[x])

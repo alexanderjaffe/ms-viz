@@ -19,8 +19,7 @@
     <!-- Get some nice font-->
     <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>
 
-    <script src = "js/priovis.js"></script>
-    <script src = "js/agevis.js"></script>
+    <script src = "js/spectrumvis.js"></script>
     <script src = "js/radarchart.js"></script>
     <script src = "js/heatmap.js"></script>
 
@@ -92,6 +91,7 @@
             var hm_data = [];
             var spec_data = [];
             var MyEventHandler;
+            var dateFormatter = d3.time.format("%Y-%m-%d");
 
             // call this function after Data is loaded
             var initVis = function(){
@@ -101,6 +101,7 @@
                 // add in visualizations
                 var hm_vis = new HeatMap(d3.select("#hmVis"), hm_data, MyEventHandler);
                 var radar_vis = new RadarChart(d3.select("#radarVis"), hm_data, MyEventHandler);
+                var spec_vis = new CountVis(d3.select("#specVis"), spec_data, MyEventHandler);
                 /*var prio_vis = new PrioVis(d3.select("#prioVis"), allData, metaData,"default"); */
 
                 // bind eventHandlers to the Vis Objects
@@ -120,13 +121,10 @@
 
                 if (!error) {
                     
-                    /*allData = _allData.map(function(d){
-                    }) */
-                    
                     hm_data = _hm_data;
-                    spec_data = _spec_data
-                    gnps_data = _gnps_data
-                    
+                    gnps_data = _gnps_data;
+                    spec_data = _spec_data;
+
                     console.log(hm_data);
                     console.log(spec_data);
                     console.log(gnps_data);
@@ -140,7 +138,7 @@
                 // load datasets with queue.js
                 queue()
                     .defer(d3.json, 'data/gnps_LS_processed.json')
-                    .defer(d3.json, 'data/perDayData.json')
+                    .defer(d3.json, 'data/spectra.json')
                     .defer(d3.tsv, 'data/cmpd_table_melted.tsv')
                     .await(function(error,file1,file2, file3){dataLoaded(error,file1,file2,file3)});
                 }

@@ -72,3 +72,13 @@ text.text-hover {
     font-size: 12px;
     line-height: 20px;
 }
+
+.axis2 line,
+.axis2 path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.axis2 text {
+    font: 10px sans-serif;
+}
