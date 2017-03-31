@@ -27,13 +27,15 @@
     <link rel="stylesheet" type="text/css" href="css/myStyle.css">
 
 </head>
-<body>
+<body style='margin-top:0px;margin-left:20px;margin-right:20px;'>
     <div>
-        <h1>TraxLab Proteomics Discovery Platform</h1>
-
         <div class="row">
-            <div class="col-md-8 col-sm-12">
-               <p> Mouse-over heatmap cells to display compound information and MS2 spectrum. Click rows to sort by sample, <br> on cells to sort by compound.</p>
+            <div class="col-md-6">
+                <h1>TraxLab Proteomics Discovery Platform</h1>
+            </div>
+            <div class="col-md-6">
+            <br>
+               <p> Mouse-over heatmap cells to display compound information, MS2 spectrum, and presence across samples.<br> Click rows to sort within sample, on cells to sort within compound.</p>
             </div>
         </div>
         <div class="row">
@@ -83,7 +85,7 @@
             </div>
         </div>
     </div>
-
+    </body> 
     <script>
         $(function(){ // this function is called after the HTML document is fully loaded
 
@@ -110,7 +112,13 @@
                     radar_vis.onSelectionChange(pass);
                 });
                 $(MyEventHandler).bind("cellMouseover", function(event, pass){
+                    console.log(pass);
                     radar_vis.oncellMouse(pass);
+
+                    // only trigger spectrum change if cmpd present
+                    if (pass.value){
+                        spec_vis.oncellMouse(pass);
+                    }
                 });
 
             }

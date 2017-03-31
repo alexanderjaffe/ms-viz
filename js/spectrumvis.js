@@ -1,14 +1,15 @@
 
 CountVis = function(_parentElement, _data, _eventHandler){
+    
     this.parentElement = _parentElement;
     this.data = _data;
     this.eventHandler = _eventHandler;
     this.displayData = [];
     this.metaData;
 
-    this.margin = {top: 20, right: 0, bottom: 30, left: 50},
-    this.width = 650 - this.margin.left - this.margin.right,
-    this.height = 300 - this.margin.top - this.margin.bottom;
+    this.margin = {top: 50, right: 20, bottom:20 , left: 100},
+    this.width = window.innerWidth/2 - this.margin.left - this.margin.right,
+    this.height = window.innerHeight/4; - this.margin.top - this.margin.bottom;
 
     this.initVis();
 }
@@ -64,21 +65,34 @@ CountVis.prototype.initVis = function(){
         .text("Raw Intensity");
 
     // filter, aggregate, modify data
-    this.wrangleData();
+    this.wrangleData(null);
 
     // call the up method
     this.updateVis();
 
-    this.onSelectionChange();
 }
 
-CountVis.prototype.wrangleData= function(){
+CountVis.prototype.wrangleData= function(pass){
 
-    // displayData should hold the data which is visualized
-    // pretty simple in this case -- no modifications needed
-    this.displayData = this.data[21]["spectrum"];
-    console.log(this.displayData)
+    // filter for passed cmpd and sample
+    if (pass){
 
+        cmpd = pass.cmpd.replace("#", "compound_")
+        sample = pass.sample
+
+        this.intData = this.data.filter(function(d){
+
+            if (d.compound == cmpd && d.sample == sample){
+                return true
+            }
+            else {return false}
+        })
+
+        this.displayData = this.intData[0]["spectrum"]
+    }
+
+    else {this.displayData = this.data[20]["spectrum"]}
+    // else display data stays empty - no spectrum
 }
 
 CountVis.prototype.updateVis = function(){
@@ -99,9 +113,11 @@ CountVis.prototype.updateVis = function(){
 
     // updates axis
     this.svg.select(".x.axis2")
+        .transition().duration(750)
         .call(this.xAxis);
 
     this.svg.select(".y.axis2")
+        .transition().duration(750)
         .call(this.yAxis)
 
     // bind new data 
@@ -113,7 +129,7 @@ CountVis.prototype.updateVis = function(){
 
     // update the line
     peaks.select("line")
-        .transition().duration(1000)
+        .transition().duration(750)
         .attr("x1", function(d){return that.x(d.mz)})
         .attr("y2", function(d){return that.y(that.ymin)})
         .attr("x2", function(d){return that.x(d.mz)})
@@ -121,7 +137,7 @@ CountVis.prototype.updateVis = function(){
 
     // then update the labels
     peaks.select("text")
-        .transition().duration(1000)
+        .transition().duration(750)
         .attr("x", function(d){return that.x(d.mz)})
         .attr("y", function(d){return that.y(d.i)})
         //.attr("class", function(d,i){return "label" + i})
@@ -170,9 +186,10 @@ CountVis.prototype.updateVis = function(){
         .style("text-anchor", "middle")
 }
 
-CountVis.prototype.onSelectionChange= function (pass){
+CountVis.prototype.oncellMouse= function (pass){
 
-    this.displayData = this.displayData = this.data[24]["spectrum"];
+    this.wrangleData(pass);
+
     this.updateVis();
 }
 

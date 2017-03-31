@@ -7,7 +7,7 @@ RadarChart = function(_parentElement, _data, _eventHandler){
     this.data = _data;
     this.displayData = [];
     this.eventHandler = _eventHandler;
-    this.margin = {top: 75, right: 20, bottom: 10, left: 100},
+    this.margin = {top: 50, right: 50, bottom: 40, left: 200},
 
     // boot up the viz
     this.initVis();
@@ -19,7 +19,8 @@ RadarChart.prototype.initVis = function(){
     
     var that = this;
 
-    this.height = this.width = window.innerHeight/3;
+    this.height = window.innerHeight/4;
+    this.width = window.innerWidth/2;
     this.cradius = 5;
     this.factor = 1;
     this.factorLegend = .85;
@@ -103,15 +104,12 @@ RadarChart.prototype.updateVis = function(){
 
     var that = this;
 
-    console.log(this.mode)
     // compute data-dependant variables
     this.maxValue = d3.max([d3.max(this.all_vals[this.mode]), 1.25])
     this.allAxis = (this.displayData[0].map(function(i, j){return i.axis}));
     this.total = this.allAxis.length;
-    this.radius = this.factor*Math.min(this.width/2, this.height/2);
+    this.radius = this.factor*Math.min(this.height/2, this.height/2);
     this.Format = d3.format('.1f');
-
-    //console.log(this.maxValue);
 
     // remove old elements
     // temporary replacement for select-enter-exit
@@ -138,7 +136,7 @@ RadarChart.prototype.updateVis = function(){
            .style("stroke", "grey")
            .style("stroke-opacity", "0.75")
            .style("stroke-width", "0.3px")
-           .attr("transform", "translate(" + (that.width/2-levelFactor) + ", " + (that.height/2-levelFactor) + ")")
+           .attr("transform", "translate(" + (that.height/2-levelFactor) + ", " + (that.height/2-levelFactor) + ")")
             .style("opacity", function(){
             if (that.mode=="quant"){return 1 }
                 else {b=(((j+1)*that.maxValue/that.levels)==1); return b ? 1 : 0}
@@ -162,8 +160,8 @@ RadarChart.prototype.updateVis = function(){
            .attr("y", function(d){return levelFactor*(1-that.factor*Math.cos(0));})
            .attr("class", "legend")
            .style("font-family", "sans-serif")
-           .style("font-size", "10px")
-           .attr("transform", "translate(" + (that.width/2-levelFactor + that.ToRight) + ", " + (that.height/2-levelFactor) + ")")
+           .style("font-size", "8px")
+           .attr("transform", "translate(" + (that.height/2-levelFactor + that.ToRight) + ", " + (that.height/2-levelFactor) + ")")
            .attr("fill", "#737373")
            //.text(that.Format((j+1)*that.maxValue/that.levels));
            .text(function(){return that.Format((j+1)*that.maxValue/that.levels)})
@@ -186,9 +184,9 @@ RadarChart.prototype.updateVis = function(){
         .attr("class", "axis");
 
     axis.append("line")
-        .attr("x1", that.width/2)
+        .attr("x1", that.height/2)
         .attr("y1", that.height/2)
-        .attr("x2", function(d, i){return that.width/2*(1-that.factor*Math.sin(i*that.radians/that.total));})
+        .attr("x2", function(d, i){return that.height/2*(1-that.factor*Math.sin(i*that.radians/that.total));})
         .attr("y2", function(d, i){return that.height/2*(1-that.factor*Math.cos(i*that.radians/that.total));})
         .attr("class", "line")
         .style("stroke", "grey")
@@ -198,11 +196,11 @@ RadarChart.prototype.updateVis = function(){
         .attr("class", "label")
         .text(function(d){return d})
         .style("font-family", "sans-serif")
-        .style("font-size", "11px")
+        .style("font-size", "10px")
         .attr("text-anchor", "middle")
         .attr("dy", "1.5em")
         .attr("transform", function(d, i){return "translate(0, -10)"})
-        .attr("x", function(d, i){return that.width/2*(1-that.factorLegend*Math.sin(i*that.radians/that.total))-60*Math.sin(i*that.radians/that.total);})
+        .attr("x", function(d, i){return that.height/2*(1-that.factorLegend*Math.sin(i*that.radians/that.total))-60*Math.sin(i*that.radians/that.total);})
         .attr("y", function(d, i){return that.height/2*(1-Math.cos(i*that.radians/that.total))-20*Math.cos(i*that.radians/that.total);});
 
     this.displayData.forEach(function(y, x){
@@ -212,7 +210,7 @@ RadarChart.prototype.updateVis = function(){
       var nodes = that.svg.selectAll(".nodes")
         .data(y, function(j, i){
           dataValues.push([
-            that.width/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)), 
+            that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)), 
             that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.cos(i*that.radians/that.total))
           ]);
         });
@@ -258,10 +256,10 @@ RadarChart.prototype.updateVis = function(){
         .attr("alt", function(j){return Math.max(j.value, 0)})
         .attr("cx", function(j, i){
           dataValues.push([
-            that.width/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)), 
+            that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)), 
             that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.cos(i*that.radians/that.total))
         ]);
-        return that.width/2*(1-(Math.max(j.value, 0)/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total));
+        return that.height/2*(1-(Math.max(j.value, 0)/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total));
         })
         .attr("cy", function(j, i){
           return that.height/2*(1-(Math.max(j.value, 0)/that.maxValue)*that.factor*Math.cos(i*that.radians/that.total));

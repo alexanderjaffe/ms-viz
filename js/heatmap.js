@@ -7,7 +7,7 @@ HeatMap = function(_parentElement, _data, _eventHandler){
     this.data = _data;
     this.displayData = [];
     this.eventHandler = _eventHandler;
-    this.margin = {top: 75, right: 20, bottom: 10, left: 120},
+    this.margin = {top: 50, right: 20, bottom: 10, left: 100},
 
     // boot up the viz
     this.initVis();
@@ -19,7 +19,7 @@ HeatMap.prototype.initVis = function(){
     
     var that = this;
 
-    this.width = window.innerWidth - this.margin.right - 100 ;
+    this.width = window.innerWidth - this.margin.right - 120 ;
     //this.width = this.cellSize*this.col_number, // - margin.left - margin.right,
     this.height = window.innerHeight/2.5 // - margin.top - margin.bottom,
     //gridSize = Math.floor(width / 24),
@@ -117,11 +117,12 @@ HeatMap.prototype.updateVis = function(){
         .attr("x", 0)
         .attr("y", function(d,i){return i*that.cellSize;})
         .style("text-anchor", "end")
+        .style("font-size", "10px")
         .attr("transform", "translate(-6," + that.cellSize/1.5 + ")")
         .attr("class", function (d,i) { return "rowLabel mono r"+i;} ) 
         .on("mouseover", function(d) {d3.select(this).classed("text-hover",true);})
         .on("mouseout" , function(d) {d3.select(this).classed("text-hover",false);})
-        .on("click", function(d,i) {console.log("rowlabel fire"); that.rowSortOrder=!that.rowSortOrder; that.sortbylabel("r",i,that.rowSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;});
+        .on("click", function(d,i) {that.rowSortOrder=!that.rowSortOrder; that.sortbylabel("r",i,that.rowSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;});
 
     // add in collabels
     var colLabels = this.svg.append("g")
@@ -165,9 +166,8 @@ HeatMap.prototype.updateVis = function(){
                     else {return 0}})
                 .classed("text-highlight",function(c,ci){return ci==(d.col-1);});
 
-            console.log(d)
             // trigger event for spectrum viz
-            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample, dtype:"on"})
+            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample, dtype:"on", value: (d.value > 0)})
             
         })
         .on("mouseout", function(d){
