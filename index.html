@@ -39,8 +39,8 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-md-4" style = "width:300px">
-                <b>current selection:</b> <span id="brushInfo"></span>
+            <div class="col-md-6">
+                <b>selected:</b> <span id="brushInfo"></span>
             </div>
         </div>
         <div class="row">
@@ -118,7 +118,13 @@
                     // only trigger spectrum change if cmpd present
                     if (pass.value){
                         spec_vis.oncellMouse(pass);
+                        console.log(pass)
                     }
+
+                    // update ticker
+                    text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", GNPS hit of "
+                    d3.select("#brushInfo").html(text)
+
                 });
 
             }

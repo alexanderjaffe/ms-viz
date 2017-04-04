@@ -42,7 +42,7 @@ text.text-selected {
 }
 
 text.text-highlight {
-    fill: #c00;
+    fill: #f40000;
 }
 text.text-hover {
     fill: #00C;

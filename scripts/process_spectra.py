@@ -3,6 +3,7 @@ import json
 import argparse
 import glob
 import sys
+import math
 
 def get_keepers(cmpd_table, spectra_file):
 
@@ -11,9 +12,9 @@ def get_keepers(cmpd_table, spectra_file):
    	f.close()
 
    	# check for filtered cmpd_table
-   	if len(table) > 200:
+   	'''if len(table) > 200:
    		print "Error: Make sure to use compound table filtered for size/singletons."
-   		sys.exit()
+   		sys.exit()'''
 
    	# get cmpds to keep from cmpd_table
    	cmpds = []
@@ -33,7 +34,7 @@ def get_keepers(cmpd_table, spectra_file):
 				if "mzXML" in element:
 					path = element.split("$")[0]
 					# parse out sample name and spectra
-					sample = path.split("/")[len(path.split("/"))-1].strip(".mzXML")
+					sample = path.split("/")[len(path.split("/"))-1].replace(".mzXML",'')
 					# take first spectrum as representative
 					spectrum = element.split("$")[1].split(",")[0]
 					# build sample: spectra to keep dict
@@ -47,6 +48,8 @@ def get_keepers(cmpd_table, spectra_file):
 
 def retrieve_spectra(ms_run, basename, keepers_list):
 	
+	print ms_run, basename
+	
 	sample = mzxml.read(ms_run)
 	scans = []
 	while True:
@@ -57,19 +60,30 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 			if next_scan["num"] in keepers_list[basename].keys():
 				# convert np arrays to json-friendly lists, and round vals
 				ia = [round(val,2) for val in next_scan["intensity array"]]
-				mz = [round(val,2) for val in next_scan["m/z array"]]
+				mz = [math.floor(val*10)/10 for val in next_scan["m/z array"]]
 				# write peaks as json pairs
 				if len(ia) == len(mz):
-					spectrum = []
+					spectrum = {}
 					for i in range(len(mz)):
-						spectrum.append({"i":ia[i], "mz":mz[i]})
-					next_scan["spectrum"] = spectrum
+						# only write out pair if int. > 0
+						if (ia[i]>0):
+							# sum intensities from close mzs into combined peaks
+							if mz[i] not in spectrum:
+								spectrum[mz[i]] = ia[i]
+							else:
+								spectrum[mz[i]] += ia[i]
+					# write out as json pairs
+					spectrum_list = []
+					for key, item in spectrum.iteritems():
+						spectrum_list.append({"i":item, "mz":key})
+
+					next_scan["spectrum"] = spectrum_list
 					next_scan["compound"] = keepers_list[basename][next_scan["num"]]
 					next_scan["sample"] = basename
 					next_scan.pop("intensity array")
 					next_scan.pop("m/z array")
 
-				scans.append(next_scan)
+					scans.append(next_scan)
 		except:
 			break
 	
@@ -121,7 +135,7 @@ def main():
 	# select all mzXML in in_dir
 	for sample in glob.glob((in_dir+"/*mzXML")):
 		# get file name
-		basename = sample.split("/")[(len(sample.split("/"))-1)].strip(".mzXML")
+		basename = sample.split("/")[(len(sample.split("/"))-1)].replace(".mzXML", '')
 		print "Processing " + basename + ".mzXML"
 		# convert to json and combine into one giant file
 		#final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)

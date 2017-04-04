@@ -62,7 +62,7 @@ CountVis.prototype.initVis = function(){
         .attr("y", 6)
         .attr("dy", ".71em")
         .style("text-anchor", "end")
-        .text("Raw Intensity");
+        .text("Intensity");
 
     // filter, aggregate, modify data
     this.wrangleData(null);
@@ -80,6 +80,9 @@ CountVis.prototype.wrangleData= function(pass){
         cmpd = pass.cmpd.replace("#", "compound_")
         sample = pass.sample
 
+        console.log(cmpd)
+        console.log(sample)
+
         this.intData = this.data.filter(function(d){
 
             if (d.compound == cmpd && d.sample == sample){
@@ -88,10 +91,10 @@ CountVis.prototype.wrangleData= function(pass){
             else {return false}
         })
 
+        // take the first one in case there are multiple
         this.displayData = this.intData[0]["spectrum"]
     }
 
-    else {this.displayData = this.data[20]["spectrum"]}
     // else display data stays empty - no spectrum
 }
 
@@ -109,15 +112,22 @@ CountVis.prototype.updateVis = function(){
     this.y.domain([this.ymin,(this.ymax+this.ymax/8)])
 
     // calculate 50th percentile value
-    this.p = this.percentile(this.displayData.map(function(d){return d.i}),0.90)
+    console.log(this.displayData)
+    if (this.displayData.length > 0){
+        var intensities = this.displayData.map(function(d){return d.i}).sort(function(a,b){return a-b})
+        this.p = this.percentile(intensities,0.95)
+    }
+
+    // transition speed
+    t = 100
 
     // updates axis
     this.svg.select(".x.axis2")
-        .transition().duration(750)
+        .transition().duration(t)
         .call(this.xAxis);
 
     this.svg.select(".y.axis2")
-        .transition().duration(750)
+        .transition().duration(t)
         .call(this.yAxis)
 
     // bind new data 
@@ -129,7 +139,7 @@ CountVis.prototype.updateVis = function(){
 
     // update the line
     peaks.select("line")
-        .transition().duration(750)
+        .transition().duration(t)
         .attr("x1", function(d){return that.x(d.mz)})
         .attr("y2", function(d){return that.y(that.ymin)})
         .attr("x2", function(d){return that.x(d.mz)})
@@ -137,7 +147,7 @@ CountVis.prototype.updateVis = function(){
 
     // then update the labels
     peaks.select("text")
-        .transition().duration(750)
+        .transition().duration(t)
         .attr("x", function(d){return that.x(d.mz)})
         .attr("y", function(d){return that.y(d.i)})
         //.attr("class", function(d,i){return "label" + i})
@@ -164,10 +174,23 @@ CountVis.prototype.updateVis = function(){
         .on("mouseover", function(d,i){
 
             d3.select(".label" + i).style("fill", "red")
+            d3.select(this).style("stroke", "red")
+
+            // allow display of hidden labels on mouseover
+            if (d.i < that.p){
+                d3.select(".label" + i).style("visibility", "visible").style("fill", "red")
+            }
+
         })
         .on("mouseout", function(d,i){
 
             d3.select(".label" + i).style("fill", "black")
+            d3.select(this).style("stroke", "black")
+
+            // hide on mouseout
+            if (d.i < that.p){
+                d3.select(".label" + i).style("visibility", "hidden")
+            }
         })
 
     // set main attributes for labels

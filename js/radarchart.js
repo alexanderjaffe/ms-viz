@@ -113,11 +113,11 @@ RadarChart.prototype.updateVis = function(){
 
     // remove old elements
     // temporary replacement for select-enter-exit
-    d3.selectAll("line").remove()
-    d3.selectAll(".legend").remove()
-    d3.selectAll(".label").remove()
-    d3.selectAll("polygon").remove()
-    d3.selectAll("circle").remove()
+    this.svg.selectAll("line").remove()
+    this.svg.selectAll(".legend").remove()
+    this.svg.selectAll(".label").remove()
+    this.svg.selectAll("polygon").remove()
+    this.svg.selectAll("circle").remove()
 
     //Circular segments
     for(var j=0; j<this.levels-1; j++){
@@ -193,7 +193,8 @@ RadarChart.prototype.updateVis = function(){
         .style("stroke-width", "1px");
 
     axis.append("text")
-        .attr("class", "label")
+        .attr("class", function(d){return "label label" + d})
+        //.attr("class", "label")
         .text(function(d){return d})
         .style("font-family", "sans-serif")
         .style("font-size", "10px")

@@ -166,8 +166,10 @@ HeatMap.prototype.updateVis = function(){
                     else {return 0}})
                 .classed("text-highlight",function(c,ci){return ci==(d.col-1);});
 
+            // highlight radar label
+            d3.select(".label" + d.sample).style("fill","red")
             // trigger event for spectrum viz
-            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample, dtype:"on", value: (d.value > 0)})
+            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"on", value: (d.value > 0)})
             
         })
         .on("mouseout", function(d){
@@ -177,8 +179,11 @@ HeatMap.prototype.updateVis = function(){
             d3.selectAll(".colLabel").style("opacity", 0);
             d3.select("#tooltip").classed("hidden", true);
 
+            // unhighlight radar label
+            d3.select(".label" + d.sample).style("fill","black")
+
             // trigger event for spectrum viz
-            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, sample:d.sample, dtype:"off"})
+            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"off"})
         });
 
     /*var legend = this.svg.selectAll(".legend")
