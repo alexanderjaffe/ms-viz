@@ -125,8 +125,8 @@ def main():
 	max_mz = args.maximum_mz if args.maximum_mz else 1e10
 
 	print "Processing library search and compound table for visualization..."
-	#processed_json = reformat_search(raw_json, keepers)
-	#tabularize_search(processed_json, keepers)
+	processed_json = reformat_search(raw_json, keepers)
+	tabularize_search(processed_json, keepers)
 	cluster_and_melt(args.input, min_mz, max_mz)
 	print "Done."
 

@@ -1,40 +1,9 @@
 id	SpectrumFile	#Scan#	Compound_Name	LibraryQualityString	MQScore	SharedPeaks	TIC_Query	SpecMZ	LibMZ	MassDiff	Charge
-0	test.mgf	290	Polysaccharide Hexose x2	Bronze	0.9408	13	32517.5	365.621	365.106	0.515015	1
-1	test.mgf	1618	Polysaccharide Hexose x5	Bronze	0.929853	16	11571.4	851.695	851.269	0.426025	1
-2	test.mgf	555	Serrawettin W1 / Serratamolide A	Bronze	0.925818	18	19726	515.445	515.336	0.109009	1
-3	test.mgf	582	Polysaccharide Hexose x3	Bronze	0.925745	18	34535.5	527.449	527.16	0.289001	1
-4	test.mgf	117	Massbank:KO008860 Adenosine	Bronze	0.920725	6	26536.5	268.291	268.0	0.290985	1
-5	test.mgf	108	Massbank:MT000016 gamma-Glutamylleucine	Bronze	0.902361	10	7674.73	262.287	261.2	1.08698	1
-6	test.mgf	1171	Polysaccharide Hexose x4	Bronze	0.888525	17	24371.8	689.771	689.215	0.555969	1
-7	test.mgf	1908	Surfactin C14	Gold	0.882088	35	19163.1	1045.09	1044.7	0.388062	1
-8	test.mgf	1619	Polysaccharide Hexose x5	Bronze	0.880148	9	5944.17	851.775	851.269	0.506042	1
-9	test.mgf	1858	Polysaccharide Hexose x6	Bronze	0.875061	12	6872.5	1013.92	1013.33	0.592957	1
-10	test.mgf	63	Polysaccharide Hexose x1	Bronze	0.872302	10	6654.55	219.488	219.027	0.461014	1
-11	test.mgf	1363	Abyssomcin J	Gold	0.866685	6	10486.2	750.274	749.25	1.02399	1
-12	test.mgf	1935	Surfactin C15	Gold	0.865966	35	39633.4	1059.17	1058.72	0.447021	1
-13	test.mgf	13	Massbank:KNA00440 L-Citrulline|2-Amino-5-ureidovaleric acid|Citrulline	Bronze	0.856656	7	1860.38	158.064	159.08	1.01601	1
-14	test.mgf	1886	Surfactin C13	Gold	0.843246	31	13241.4	1031.21	1030.71	0.504028	1
-15	test.mgf	1895	Surfactin C15	Gold	0.839042	40	34943.4	1037.04	1036.74	0.300049	1
-16	test.mgf	1868	Surfactin C14	Gold	0.83433	40	27859.2	1023.16	1022.73	0.429016	1
-17	test.mgf	6	Massbank:KNA00309 Inosine	Bronze	0.830992	7	2890.85	137.362	137.05	0.311996	1
-18	test.mgf	617	Surfactin C15	Gold	0.829962	23	17833.1	538.032	537.84	0.383911	2
-19	test.mgf	1851	Surfactin C13	Gold	0.826333	35	23116.4	1009.32	1008.73	0.591003	1
-20	test.mgf	2090	Polysaccharide Hexose x7	Bronze	0.818371	12	3972.34	1176.23	1175.38	0.853027	1
-21	test.mgf	1943	Surfactin	Bronze	0.810517	31	10885.9	1061.19	1060.64	0.554932	1
-22	test.mgf	1969	Surfactin	Bronze	0.808023	27	9972.56	1075.02	1074.65	0.36792	1
-23	test.mgf	107	cyclo-(Leu-Phe)	Bronze	0.802772	6	1905.11	261.15	261.159	0.00900269	1
-24	test.mgf	589	Surfactin C14	Gold	0.784868	23	16535.4	530.957	530.83	0.253906	2
-25	test.mgf	1885	Surfactin C13	Gold	0.779296	23	5411.92	1031.65	1030.71	0.942017	1
-26	test.mgf	395	Proximicin B	Gold	0.777282	11	5005.48	414.399	414.13	0.268982	1
-27	test.mgf	49	Polysaccharide Hexose x1	Bronze	0.767669	8	11006.1	203.493	203.053	0.440002	1
-28	test.mgf	618	Surfactin C15	Gold	0.764542	9	2682.48	537.827	537.84	0.026001	2
-29	test.mgf	24	Massbank:KNA00413 L-Arginine|(S)-2-Amino-5-guanidinovaleric acid|L-(+)-Arginine	Bronze	0.763089	7	17236.2	175.625	175.12	0.505005	1
-30	test.mgf	1897	Surfactin C15	Gold	0.75987	14	2754.16	1037.32	1036.74	0.579956	1
-31	test.mgf	1907	Surfactin C14	Gold	0.753022	23	9827.26	1044.73	1044.7	0.0290527	1
-32	test.mgf	341	Polysaccharide Hexose x2	Bronze	0.751566	13	11670.6	383.465	383.117	0.347992	1
-33	test.mgf	1911	Surfactin C13	Gold	0.737179	30	14415.9	1047.34	1046.71	1046.96	1
-34	test.mgf	1224	Polysaccharide Hexose x4	Bronze	0.730369	19	19926.2	707.613	707.226	0.386963	1
-35	test.mgf	143	C17_Sphingosine 	Silver	0.722712	6	3825.25	287.428	286.274	1.15402	1
-36	test.mgf	293	Polysaccharide Hexose x2	Bronze	0.715834	12	6748.01	365.11	365.106	0.0039978	1
-37	test.mgf	253	Abyssomcin H	Gold	0.709299	11	5290.8	350.193	349.17	1.02298	1
-38	test.mgf	7	Massbank:KO003945 2(1H)-Quinolinone|Quinolin-2(1H)-one	Bronze	0.706126	6	2903.69	147.087	146.0	1.08701	1
+0	LGFB1_95D_101916.mgf	4193	Heme B / Porphyrin	Gold	0.7723	19	5.93091e+06	615.14	616.177	1.03668	1
+0	LGFB2_95D_101916.mgf	4139	Heme B / Porphyrin	Gold	0.893691	11	3.83085e+07	615.185	616.177	0.992065	1
+0	LGFN_L_100MeOH_080916.mgf	1925	Massbank:KNA00223 FAD|Flavin adenine dinucleotide	Bronze	0.72166	10	1.673e+06	439.101	439.1	0.000732422	1
+1	LGFN_L_100MeOH_080916.mgf	156	Pesticide3_Pyraclostrobin_C19H18ClN3O4_Methyl [2-({[1-(4-chlorophenyl)-1H-pyrazol-3-yl]oxy}methyl)phenyl]methoxycarbamate	Gold	0.710902	10	1.02642e+07	411.146	410.088	1.05814	1
+2	LGFN_L_100MeOH_080916.mgf	5030	NCGC00380283-01!4-[5-[[4-[5-[acetyl(hydroxy)amino]pentylamino]-4-oxobutanoyl]-hydroxyamino]pentylamino]-4-oxobutanoic acid	Gold	0.702883	12	1.99902e+07	478.292	478.287	0.00482178	1
+0	LGFN_S_100MeOH_080916.mgf	5067	HMDB:HMDB00593-821 PC(18:1(9Z)/18:1(9Z)) 	Bronze	0.940225	6	1.35599e+08	787.592	786.601	0.991394	1
+1	LGFN_S_100MeOH_080916.mgf	1871	NCGC00384576-01_C18H24O12_2-Methyl-4-oxo-4H-pyran-3-yl 6-O-(4-carboxy-3-hydroxy-3-methylbutanoyl)-beta-D-glucopyranoside	Gold	0.926933	9	4.95509e+07	433.133	433.134	0.000579834	1
+2	LGFN_S_100MeOH_080916.mgf	4939	NCGC00380283-01!4-[5-[[4-[5-[acetyl(hydroxy)amino]pentylamino]-4-oxobutanoyl]-hydroxyamino]pentylamino]-4-oxobutanoic acid	Gold	0.78869	16	3.46462e+07	478.292	478.287	0.00482178	1

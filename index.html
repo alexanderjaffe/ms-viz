@@ -39,7 +39,7 @@
             </div>
         </div>
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-12" style="margin-left:5px">
                 <b>selected:</b> <span id="brushInfo"></span>
             </div>
         </div>
@@ -53,7 +53,7 @@
             <div class="col-md-12" id="hmVis">
             </div>
         </div>
-        <!--<div class="container">
+                <!--<div class="container">
             <div class="row">
             <label class="checkbox-inline">
                 <input type="checkbox" id="order" checked data-on="Sorted" data-off="Clustered" data-toggle="toggle"> Order
@@ -63,28 +63,29 @@
             </label>
             </div>
         </div> -->
-        <div class="row">
-            <div class="col-md-3" id = "order">
+        <div class="row" style="margin-left:100px;margin-top:20px">
+            <div class="col-md-2" id = "order">
               <form>
               Order:
-                <select>
+                <select style="background-color:white" name="test">
                   <option value="sort_name" selected >sort by name</option>
                   <option value="hclust">cluster</option>
                   <option value="sort_count">sort by sample count</option>
                 </select>
               </form>
             </div>
-            <div class="col-md-3" id = "data_type">
+            <div class="col-md-2" id = "data_type">
               <form>
               Data Type:
-                <select>
+                <select style="background-color:white">
                   <option value="quant" selected >Quantitative</option>
                   <option value="bin">Binary</option>
                 </select>
               </form>
             </div>
+            <div class="col-md-6" id = "legend">
+            </div>
         </div>
-    </div>
     </body> 
     <script>
         $(function(){ // this function is called after the HTML document is fully loaded
@@ -92,6 +93,7 @@
             // variables keeping global knowledge of the data
             var hm_data = [];
             var spec_data = [];
+            var gnps_data = [];
             var MyEventHandler;
             var dateFormatter = d3.time.format("%Y-%m-%d");
 
@@ -104,7 +106,46 @@
                 var hm_vis = new HeatMap(d3.select("#hmVis"), hm_data, MyEventHandler);
                 var radar_vis = new RadarChart(d3.select("#radarVis"), hm_data, MyEventHandler);
                 var spec_vis = new CountVis(d3.select("#specVis"), spec_data, MyEventHandler);
-                /*var prio_vis = new PrioVis(d3.select("#prioVis"), allData, metaData,"default"); */
+
+                // get gnps data given cmpd + sample
+                var get_gnps_data = function(pass){
+
+                    cmpd = pass.cmpd.replace("#", "compound_")
+                    sample = pass.sample
+
+                    var intData = spec_data.filter(function(d){
+
+                        if (d.compound == cmpd && d.sample == sample){
+                            return true
+                        }
+                        else {return false}
+                    })
+
+                    // only search if value
+                    if (pass.value){
+                        // get scan no
+                        var scan_no = intData[0]["num"]
+                        var mgf = sample + ".mgf"
+
+                        console.log(mgf)
+
+                        // now search gnps data
+                        var gnps = gnps_data.filter(function(d){
+                            if (d["#Scan#"] == scan_no && d["SpectrumFile"]==mgf){
+                                return true
+                            }
+                            else {return false}
+                        })
+
+                        if (gnps.length > 0){
+                            return gnps[0]
+                        }
+                        else {return false}
+                    }
+
+                    else {return false}
+                    
+                }
 
                 // bind eventHandlers to the Vis Objects
                 $(MyEventHandler).bind("selectionChanged", function(event, pass){
@@ -112,19 +153,25 @@
                     radar_vis.onSelectionChange(pass);
                 });
                 $(MyEventHandler).bind("cellMouseover", function(event, pass){
-                    console.log(pass);
+                    //console.log(pass);
                     radar_vis.oncellMouse(pass);
 
                     // only trigger spectrum change if cmpd present
                     if (pass.value){
                         spec_vis.oncellMouse(pass);
-                        console.log(pass)
                     }
 
                     // update ticker
-                    text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", GNPS hit of "
-                    d3.select("#brushInfo").html(text)
+                    var results = get_gnps_data(pass);
 
+                    if (results){
+                        text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", GNPS hit to " + results["Compound_Name"].slice(0,30) + " at score of " + results["MQScore"].slice(0,4)
+                        d3.select("#brushInfo").html(text)
+                    }
+                    else {
+                        text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", no GNPS hit"
+                        d3.select("#brushInfo").html(text)
+                    }
                 });
 
             }
@@ -157,21 +204,17 @@
                     .await(function(error,file1,file2, file3){dataLoaded(error,file1,file2,file3)});
                 }
 
-                // define button behaviors
-                d3.select("#order").select("select").on("change",function(){
-                    console.log("test")
-                    pass = {type:"order", value:this.value}
-                    $(MyEventHandler).trigger("selectionChanged", pass)
-                });
-                d3.select("#data_type").select("select").on("change",function(){
-                    console.log("toggle")
-                    pass = {type:"data_type", value:this.value}
-                    $(MyEventHandler).trigger("selectionChanged", pass)
-                });
+            // define button behaviors
+            d3.select("#order").select("select").on("change",function(){
+                pass = {type:"order", value:this.value}
+                $(MyEventHandler).trigger("selectionChanged", pass)
+            });
+            d3.select("#data_type").select("select").on("change",function(){
+                pass = {type:"data_type", value:this.value}
+                $(MyEventHandler).trigger("selectionChanged", pass)
+            });
 
-                console.log(d3.select("#order"))
-
-                startHere();
+            startHere();
         })
 
     </script>

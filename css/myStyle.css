@@ -82,3 +82,13 @@ text.text-hover {
 .axis2 text {
     font: 10px sans-serif;
 }
+
+.axis3 text {
+    font: 10px sans-serif;
+}
+
+.axis3 line, .axis3 path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}

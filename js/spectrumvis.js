@@ -80,9 +80,6 @@ CountVis.prototype.wrangleData= function(pass){
         cmpd = pass.cmpd.replace("#", "compound_")
         sample = pass.sample
 
-        console.log(cmpd)
-        console.log(sample)
-
         this.intData = this.data.filter(function(d){
 
             if (d.compound == cmpd && d.sample == sample){
@@ -112,14 +109,13 @@ CountVis.prototype.updateVis = function(){
     this.y.domain([this.ymin,(this.ymax+this.ymax/8)])
 
     // calculate 50th percentile value
-    console.log(this.displayData)
     if (this.displayData.length > 0){
         var intensities = this.displayData.map(function(d){return d.i}).sort(function(a,b){return a-b})
         this.p = this.percentile(intensities,0.95)
     }
 
     // transition speed
-    t = 100
+    t = 500
 
     // updates axis
     this.svg.select(".x.axis2")

@@ -186,24 +186,44 @@ HeatMap.prototype.updateVis = function(){
             $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"off"})
         });
 
-    /*var legend = this.svg.selectAll(".legend")
-        .data([-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10])
-        .enter().append("g")
-        .attr("class", "legend");
+    // add in legend
 
-    legend.append("rect")
-        .attr("x", function(d, i) { return that.legendElementWidth * i; })
-        .attr("y", that.height)
-        .attr("width", that.legendElementWidth)
-        .attr("height", that.cellSize)
-        .style("fill", function(d, i) { return that.colorScale(d.value); });
+    var lh = 50;
+    var lw = 600;
 
-    legend.append("text")
-        .attr("class", "mono")
-        .text(function(d) { return d; })
-        .attr("width", that.legendElementWidth)
-        .attr("x", function(d, i) { return that.legendElementWidth * i; })
-        .attr("y", that.height); */
+    var key = d3.select("#legend").append("svg").attr("width", lw).attr("height", lh);
+
+    var legend = key.append("defs").append("svg:linearGradient")
+        .attr("id", "gradient").attr("x1", "0%").attr("y1", "100%")
+        .attr("x2", "100%").attr("y2", "100%")
+        //.attr("spreadMethod", "pad");
+
+    legend.append("stop").attr("offset", "0%")
+        .attr("stop-color", "white")
+        .attr("stop-opacity", 1);
+
+    legend.append("stop").attr("offset", "100%")
+        .attr("class","gradienthi")
+        .attr("stop-color", "blue")
+        .attr("stop-opacity", 1);
+
+    key.append("rect").attr("width", lw-100)
+        .attr("height", 10)
+        .style("fill", "url(#gradient)")
+        .attr("transform", "translate(10,0)");
+
+    this.y = d3.scale.linear().range([lw-100, 0]).domain([this.dmax,this.dmin])
+
+    this.legend_axis = d3.svg.axis().scale(that.y).orient("bottom");
+
+    key.append("g").attr("class", "axis3")
+        .attr("transform", "translate(10,12)")
+        .call(that.legend_axis).append("text")
+        .attr("y", 30).attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("log intensity")
+        .attr("class","legendtext")
+        .attr("transform", "translate("+(lw-30)+"," + (-22)+")")
 
 }
 
@@ -215,7 +235,7 @@ HeatMap.prototype.onSelectionChange= function(pass){
 
     // call relevant function
     if (type=="order"){this.order(pass["value"])}
-    else if (type == "data_type"){this.colorize(pass["value"])}
+    else if (type == "data_type"){this.heatmapUpdate(pass["value"])}
 
 }
 
@@ -240,24 +260,41 @@ HeatMap.prototype.getProp = function(array, field, val, out){
     return temp[0][out]
 }
 
-// modify cell color for quantitative/binary modes
-HeatMap.prototype.colorize = function(value){
+// update heatmap for quantitative/binary modes
+HeatMap.prototype.heatmapUpdate = function(value){
 
     var that = this;
 
     var t = this.svg.transition().duration(1500);
 
     if (value == "quant"){
+        // cells
         t.selectAll(".cell")
             .style("fill", function(d) { return that.colorScale(d.value); });
+
+        //legend
+        d3.selectAll(".gradienthi").transition().duration(1500).attr("stop-color","blue")
+        that.y.domain([this.dmax,this.dmin])
+        d3.select(".axis3")
+            .transition().duration(1500)
+            .call(that.legend_axis)
+        d3.selectAll(".legendtext").style("visibility","visible")
     }
     
     else if (value == "bin"){
+        // cells
         t.selectAll(".cell")
             .style("fill", function(d){
                 if (d.value > 0){ return "darkgrey";}
                 else {return "white";}
             });
+        // legend
+        d3.selectAll(".gradienthi").transition().duration(1500).attr("stop-color","darkgrey")
+        that.y.domain([1,0])
+        d3.select(".axis3")
+            .transition().duration(1500)
+            .call(that.legend_axis)
+        d3.selectAll(".legendtext").style("visibility","hidden")
     }
 }
 
