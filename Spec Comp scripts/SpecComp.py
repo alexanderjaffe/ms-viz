@@ -1,4 +1,4 @@
-from __future__ import division
+#from __future__ import division
 from pyteomics import mzxml
 import math
 import sys
@@ -7,7 +7,9 @@ from scipy.sparse import csr_matrix, find
 from sys import getsizeof
 from operator import itemgetter
 import argparse
-from sklearn.preprocessing import normalize
+
+
+
 
 ''' fast calculation of cosine similarity (csr)'''
 def fast_cosine_csr(u,v): 
@@ -28,30 +30,6 @@ def fast_cosine(u,v):
         return np.dot(u,v)/denominator
     else:
         return float("inf")
-def getMSI(sample): 
-	print( "Reading " + sample)
-	scans = []
-	r = mzxml.read(sample)
-	while True:
-		try:
-			scans.append(r.next())
-		except:
-			break
-	
-	print( str(len(scans)) + " scans found in " + sample)
-	
-	msI_list={}
-	for scan in scans:
-
-		if scan['msLevel'] == '1':
-			num= scan['num']
-			mzs_MSI= scan['m/z array'].tolist()
-			intensity_array_MSI= scan['intensity array'].tolist()
-			TIC_MSI= scan['totIonCurrent']
-			msI_list[num]= {"num": num,"TIC": TIC_MSI, "mzs": mzs_MSI}#, "intensity": intensity_array_MSI, "TIC": TIC_MSI}
-
-	return msI_list
-
 
 '''Retrieves all MS2 spectra from a sample file. log-normalize all MS2 base peak intensities.'''
 def preprocess_sample(sample):
@@ -88,31 +66,35 @@ def preprocess_sample(sample):
 	base_peaks = {}
 
 	for scan in scans:
-		if scan['msLevel'] == '2':
-			num = scan['num']
+		if scan['msLevel'] == '1':
+			num= scan['num']
+			intensity_array_MSI= scan['intensity array']
+			mzs_MSI= scan['m/z array']
+			TIC_MSI= scan['totIonCurrent']
+			msI_list[num]= {"num": num,"TIC": TIC_MSI, "mzs": mzs_MSI, "intensity": intensity_array_MSI}
+			intensity_array_MSI=None 
+			mzs_MSI=None 
+		elif scan['msLevel'] == '2':
+			num2 = scan['num']
 			ms1_scan_num= int(scan['precursorMz'][0]['precursorScanNum'])
 			msI_TIC= scans[ms1_scan_num]['totIonCurrent']
 			base_mz = scan['precursorMz'][0]['precursorMz']
-
-			precursor_intensity = scan['precursorMz'][0]['precursorIntensity']
-
 			mzs_MS2 = scan['m/z array']
-
-			ms2_TIC= scan['totIonCurrent']
-			intensity_array = normalize(scan['intensity array'].reshape(1, -1))[0]
-			# for x in range(0,len(intensity_array)): 
-			#    	intensity_array[x]= intensity_array[x]/float(ms2_TIC)	
-				#print( intensity_array
+			intensity_array_ms2_temp= scan['intensity array']
+			intensity_array_ms2= intensity_array_ms2_temp/float(msI_TIC)
 			
 			init_scans +=1
 
 			#filter mzs to keep ions w/ > 10 occurrences
-			if mz_dict[(int(base_mz)*10000)] > 10:
+			if mz_dict[(int(base_mz)*10000)] > 10:				
 				
 				end_scans +=1
-				base_peaks[num] = {"num":num, "base_mz":base_mz, "intensities":intensity_array, "mzs":mzs_MS2, "precursor_intensity": precursor_intensity, "MSI TIC": msI_TIC}
+				base_peaks[num] = {"num":num2, "base_mz":base_mz, "intensities":intensity_array_ms2, "mzs":mzs_MS2, "MSI TIC": msI_TIC}
 				all_peaks = all_peaks + mzs_MS2.tolist()
-		
+			intensity_array_ms2=None 
+			intensity_array_ms2_temp=None
+			mzs_MS2=None 
+
 	peak_min = int(math.floor(min(all_peaks)))
 	peak_max = int(math.ceil(max(all_peaks)))
 
@@ -120,10 +102,15 @@ def preprocess_sample(sample):
 	all_peaks = None
 	scans = None
 	r = None
+	mz_dict=None
 	
+	
+
 	print( "%d scans filtered out by ms2 freq" %(init_scans - end_scans))
 	#Returns a list of MS2 spectra organized by scan #, and the largest and smallest precursor peaks across all MS2 in this file.
-	return peak_min, peak_max, base_peaks
+	return peak_min, peak_max, base_peaks,msI_list
+
+
 
 '''
 (1) Converts all of the MS2 peak lists in a sample to a vectorized format.
@@ -213,38 +200,39 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				if sample_data[scan]['base_mz'] > biggest_mz:
 					biggest_mz = sample_data[scan]['base_mz']
 			
+			max_mz+= 0.001
+			min_mz-= 0.001 		
+
 			mz_num_list=[]
 			ms2_intensity_list=[]
 			mzs=[]
 
-	
-			#print max_mz, min_mz
+
 			for msI, msI_items in msI_list.iteritems(): 
-					#sys.exit()
-				# compares mz values in MSI to mz max and min within group
+
 				for mz in msI_items["mzs"]: 
 
 					if (mz<=max_mz and mz>=min_mz): 
-						
-						#print "matching peak of %f mz in MS1 %s from %s" %(mz, msI, sample_name)
 						mz_num_list.append(msI_items["TIC"])
-						ms2_intensity_list.append(msI_items['intensity'][msI_items["mzs"].index(mz)])
+						index=  msI_items["mzs"].index(mz)
+						#print index 
+						#sys.exit()
+						ms2_intensity_list.append(msI_items["intensity"][index])
 			if len(mz_num_list)==0: 
-				print max_mz, min_mz
+				print(max_mz, min_mz)
 				for scan in scan_group: 
-					print sample_data[scan]["MSI TIC"]	
+					print (sample_data[scan]["base_mz"])	
 			msI_TIC_sum=0
 			ms2_intensity_sum=0 			
 			#print mz_num_list,scan_group
 
 			msI_TIC_sum=sum(mz_num_list) 
-			#for num in mz_num_list:
-				#print msI_list[num]["TIC"]
-				#msI_TIC_sum+=msI_list[num]['TIC']
 			for intensity in ms2_intensity_list: 
 				ms2_intensity_sum+= intensity
 			
 			percentComp= ms2_intensity_sum/float(msI_TIC_sum)
+			
+
 			#Create consensus spectrum
 			scan1 = scan_group[0]
 			scan_group.pop(0)
@@ -348,7 +336,7 @@ def compare_samples(samples_data, output_file):
 					found = True
 					break
 			if found:
-				line = line + str(compound['percent compostion']) + ","
+				line = line + str(compound['percent composition']) + ","
 			else:
 				line = line + "0,"
 		line = line.rstrip(",")
@@ -396,21 +384,13 @@ def main():
 	peak_data = {}
 	msI_list={}
 
-
-
-	#Get MSI 
-	print "Now Getting MSI..."
-	for sample in samples: 
-		msI_list[sample]= getMSI(sample)
-
-
 	#Get MS2 peak data for all samples in this dataset.
-	print "Now Getting MS2..."
+	print("Now Getting MS2...")
 	for sample in samples:
 
 
 		try:
-			new_min, new_max, new_peak_data = preprocess_sample(sample)
+			new_min, new_max, new_peak_data,msI_data = preprocess_sample(sample)
 		except:
 			continue
 
@@ -419,19 +399,22 @@ def main():
 		if new_max > peak_max:
 			peak_max = new_max
 		peak_data[sample] = new_peak_data
-	# for spectra in peak_data[sample].values():
-	# 	if spectra["num"]==215: 
-	# 		print "Found"
-	#sys.exit()
-	#Calculate vectors for all unique MS2 in each sample.
+		msI_list[sample]= msI_data  
+
+		#getting rid of more big variables...
+		new_peak_data=None 
+		msI_data=None 
+		sample=None 
+		raw_input("Press Enter to coninue...")
+
 	for sample in peak_data:
 		peak_data[sample] = vectorize_peak(peak_min, peak_max, peak_data[sample], sample,msI_list[sample])
 
 
 
 	#Compare samples
-	# print( "Comparing samples..."	
-	#compare_samples(peak_data, output_file)
+	print( "Comparing samples..."	)
+	compare_samples(peak_data, output_file)
 
 if __name__ == '__main__':
 	main()
