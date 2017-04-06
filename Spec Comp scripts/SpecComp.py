@@ -69,17 +69,17 @@ def preprocess_sample(sample):
 
 	for scan in scans:
 		if scan['msLevel'] == 1:
-			num= scan['num']
+			num= int(scan['num'])
 			intensity_array_MSI= scan['intensity array']
-			mzs_MSI= scan['m/z array']
+			mzs_MSI= scan['m/z array'].tolist()
 			TIC_MSI= scan['totIonCurrent']
 			msI_list[num]= {"num": num,"TIC": TIC_MSI, "mzs": mzs_MSI, "intensity": intensity_array_MSI}
 		if scan['msLevel'] == 2:
-			num2 = scan['num']
+			num2 = int(scan['num'])
 			ms1_scan_num= int(scan['precursorMz'][0]['precursorScanNum'])
 			msI_TIC= scans[ms1_scan_num]['totIonCurrent']
 			base_mz = scan['precursorMz'][0]['precursorMz']
-			mzs_MS2 = scan['m/z array']
+			mzs_MS2 = scan['m/z array'].tolist()
 			intensity_array_ms2_temp= scan['intensity array']
 			intensity_array_ms2= intensity_array_ms2_temp/float(msI_TIC)
 			
@@ -89,7 +89,7 @@ def preprocess_sample(sample):
 			if mz_dict[(int(base_mz)*10000)] > 10:				
 				
 				end_scans +=1
-				base_peaks[num] = {"num":num2, "base_mz":base_mz, "intensities":intensity_array_ms2, "mzs":mzs_MS2, "MSI TIC": msI_TIC}
+				base_peaks[num2] = {"num":num2, "base_mz":base_mz, "intensities":intensity_array_ms2, "mzs":mzs_MS2, "MSI TIC": msI_TIC}
 				all_peaks = all_peaks + mzs_MS2.tolist()
 
 	peak_min = int(math.floor(min(all_peaks)))
@@ -142,12 +142,12 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 	already_calculated = []
 	peak_vectors_unique = []
 
+
 	f = open('sims_new', 'a+')
 	for scan in peak_vectors_list:
 		found = False
 		#Compare to every other scan < this scan's mz + 1.5 Da
 		for i in xrange(len(peak_vectors_unique)-1, -1, -1):
-			print i
 			scan2 = peak_vectors_unique[i]
 			
 			mass_diff = sample_data[scan]['base_mz'] - sample_data[scan2[0]]['base_mz']
