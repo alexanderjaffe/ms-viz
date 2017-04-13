@@ -1,5 +1,6 @@
+/* Responsive spectrum visualization, based on line chart templates. */
 
-CountVis = function(_parentElement, _data, _eventHandler){
+SpectrumVis = function(_parentElement, _data, _eventHandler){
     
     this.parentElement = _parentElement;
     this.data = _data;
@@ -14,13 +15,13 @@ CountVis = function(_parentElement, _data, _eventHandler){
     this.initVis();
 }
 
-CountVis.prototype.initVis = function(){
+SpectrumVis.prototype.initVis = function(){
 
     // get mode and save out
     themode = this.mode_id;
     var that = this;
 
-    // from here down, adapted from CS171 section 6 
+    // add in plotting space
     this.svg = this.parentElement.append("svg")
         .attr("width", this.width + this.margin.left + this.margin.right)
         .attr("height", this.height + this.margin.top + this.margin.bottom)
@@ -72,7 +73,7 @@ CountVis.prototype.initVis = function(){
 
 }
 
-CountVis.prototype.wrangleData= function(pass){
+SpectrumVis.prototype.wrangleData= function(pass){
 
     // filter for passed cmpd and sample
     if (pass){
@@ -95,7 +96,7 @@ CountVis.prototype.wrangleData= function(pass){
     // else display data stays empty - no spectrum
 }
 
-CountVis.prototype.updateVis = function(){
+SpectrumVis.prototype.updateVis = function(){
 
     var that = this;
 
@@ -108,14 +109,14 @@ CountVis.prototype.updateVis = function(){
     this.x.domain([(this.xmin - this.xmax/10),(this.xmax+this.xmax/10)])
     this.y.domain([this.ymin,(this.ymax+this.ymax/8)])
 
-    // calculate 50th percentile value
+    // calculate threshold percentile value for label display
     if (this.displayData.length > 0){
         var intensities = this.displayData.map(function(d){return d.i}).sort(function(a,b){return a-b})
         this.p = this.percentile(intensities,0.95)
     }
 
     // transition speed
-    t = 500
+    var t = 500;
 
     // updates axis
     this.svg.select(".x.axis2")
@@ -172,7 +173,7 @@ CountVis.prototype.updateVis = function(){
             d3.select(".label" + i).style("fill", "red")
             d3.select(this).style("stroke", "red")
 
-            // allow display of hidden labels on mouseover
+            // allow display of hidden labels on mouseover,  using class
             if (d.i < that.p){
                 d3.select(".label" + i).style("visibility", "visible").style("fill", "red")
             }
@@ -183,7 +184,7 @@ CountVis.prototype.updateVis = function(){
             d3.select(".label" + i).style("fill", "black")
             d3.select(this).style("stroke", "black")
 
-            // hide on mouseout
+            // hide on mouseout, using class
             if (d.i < that.p){
                 d3.select(".label" + i).style("visibility", "hidden")
             }
@@ -205,15 +206,16 @@ CountVis.prototype.updateVis = function(){
         .style("text-anchor", "middle")
 }
 
-CountVis.prototype.oncellMouse= function (pass){
+SpectrumVis.prototype.oncellMouse= function (pass){
 
+    // reset data using pass
     this.wrangleData(pass);
 
     this.updateVis();
 }
 
 // from https://gist.github.com/IceCreamYou/6ffa1b18c4c8f6aeaad2
-CountVis.prototype.percentile = function (arr, p) {
+SpectrumVis.prototype.percentile = function (arr, p) {
     
     if (arr.length === 0) return 0;
     if (typeof p !== 'number') throw new TypeError('p must be a number');

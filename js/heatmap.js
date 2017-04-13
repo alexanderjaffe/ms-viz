@@ -19,10 +19,8 @@ HeatMap.prototype.initVis = function(){
     
     var that = this;
 
-    this.width = window.innerWidth - this.margin.right - 120 ;
-    //this.width = this.cellSize*this.col_number, // - margin.left - margin.right,
-    this.height = window.innerHeight/2.5 // - margin.top - margin.bottom,
-    //gridSize = Math.floor(width / 24),
+    this.width = window.innerWidth - this.margin.right - 120;
+    this.height = window.innerHeight/2.5;
     this.colorBuckets = 21,
     this.rowSortOrder=false;
     this.colSortOrder=false;
@@ -30,7 +28,7 @@ HeatMap.prototype.initVis = function(){
     // initalize data mode
     this.data_mode = "quant";
     // initialize GNPS hits
-    this.hits = false
+    this.hits = false;
     
     // add plotting space
     this.svg = this.parentElement.append("svg")
@@ -50,10 +48,10 @@ HeatMap.prototype.initVis = function(){
 HeatMap.prototype.wrangleData = function(){
 
     // displayData should hold the data which is visualized
-   //this.displayData = this.data.map(function(d) {
-    this.intData = this.data.map(function(d) {
+    this.displayData = this.data.map(function(d) {
         return {
 
+            // parse elements from raw data
             row:   +parseInt(d.row),
             col:   +parseInt(d.col),
             value: +parseFloat(d.log_value),
@@ -67,17 +65,9 @@ HeatMap.prototype.wrangleData = function(){
             score: d.score
         };
     })
-
-    /*this.displayData = this.intData.filter(function(d){
-        if (d.col > 400){return false}
-            else {return true}
-    })*/
-    
-    this.displayData = this.intData;
-
 }
 
-/** the drawing function - should use the D3 selection, enter, exit*/
+/** Draws the heatmap.*/
 HeatMap.prototype.updateVis = function(){
 
     var that = this;
@@ -100,7 +90,6 @@ HeatMap.prototype.updateVis = function(){
     // use this to determine cell width/height
     this.cellWidth = this.width/this.col_number;
     this.cellSize = this.height/this.row_number;
-    // this.legendElementWidth = this.cellSize*2.5;
 
     // get row and col labels
     this.rowLabel = _.uniq(this.displayData.map(function(d){return d.sample})).sort()
@@ -108,9 +97,6 @@ HeatMap.prototype.updateVis = function(){
     // get position info for rows/cols
     this.rowinfo = _.uniq(this.displayData, function(d){return d.sample})
     this.colinfo = _.uniq(this.displayData, function(d){return d.cmpd})
-
-    // col label tweak factor
-    this.col_adjust = 2;
 
     // add in rowlabels
     var rowLabels = this.svg.append("g")
@@ -144,6 +130,7 @@ HeatMap.prototype.updateVis = function(){
         .attr("class",  function (d,i) { return "colLabel mono c"+i;} )
         .on("mouseover", function(d) {d3.select(this).classed("text-hover",true);})
         .on("mouseout" , function(d) {d3.select(this).classed("text-hover",false);})
+        // in our version there's no click behavior for columns
         //.on("click", function(d,i) {console.log(i); that.colSortOrder=!that.colSortOrder; that.sortbylabel("c",i,that.colSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;});
 
     // main heatmap
@@ -171,19 +158,19 @@ HeatMap.prototype.updateVis = function(){
                     else {return 0}})
                 .classed("text-highlight",function(c,ci){return ci==(d.col-1);});
 
-            // highlight radar label
+            // highlight radar label using class name
             d3.select(".label" + d.sample).style("fill","red")
             // trigger event for spectrum viz
             $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"on", value: (d.value > 0), hit: d.hit, score: d.score})
             
         })
         .on("mouseout", function(d){
+            
+            // undo highlights and fills
             d3.select(this).classed("cell-hover",false);
             d3.selectAll(".rowLabel").classed("text-highlight",false);
-            //d3.selectAll(".colLabel").classed("text-highlight",false);
             d3.selectAll(".colLabel").style("opacity", 0);
             d3.select("#tooltip").classed("hidden", true);
-
             // unhighlight radar label
             d3.select(".label" + d.sample).style("fill","black")
 
@@ -191,36 +178,44 @@ HeatMap.prototype.updateVis = function(){
             $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"off"})
         });
 
-    // add in legend
-
+    
+    // ADD IN LEGEND
+    
     var lh = 50;
     var lw = 400;
 
+    // create svg space
     var key = d3.select("#legend").append("svg").attr("width", lw).attr("height", lh);
 
+    // initialize gradient
     var legend = key.append("defs").append("svg:linearGradient")
         .attr("id", "gradient").attr("x1", "0%").attr("y1", "100%")
         .attr("x2", "100%").attr("y2", "100%")
-        //.attr("spreadMethod", "pad");
 
+    // gradient begin
     legend.append("stop").attr("offset", "0%")
         .attr("stop-color", "white")
         .attr("stop-opacity", 1);
 
+    // gradient end
     legend.append("stop").attr("offset", "100%")
         .attr("class","gradienthi")
         .attr("stop-color", "blue")
         .attr("stop-opacity", 1);
 
+    // add in rect for legend
     key.append("rect").attr("width", lw-100)
         .attr("height", 10)
         .style("fill", "url(#gradient)")
         .attr("transform", "translate(10,0)");
 
+    // initialize scale
     this.y = d3.scale.linear().range([lw-100, 0]).domain([this.dmax,this.dmin])
 
+    // add in axis
     this.legend_axis = d3.svg.axis().scale(that.y).orient("bottom");
 
+    // modify attributes
     key.append("g").attr("class", "axis3")
         .attr("transform", "translate(10,12)")
         .call(that.legend_axis).append("text")
@@ -244,7 +239,9 @@ HeatMap.prototype.onSelectionChange= function(pass){
 
 }
 
+// color function to deal with log data
 HeatMap.prototype.getColor = function(x){
+  
   if (x == 0){
     return "white";
   }else{
@@ -255,6 +252,7 @@ HeatMap.prototype.getColor = function(x){
 // method to return property of a row or column
 HeatMap.prototype.getProp = function(array, field, val, out){
 
+    // filter array for field and val
     var temp = array.filter(function(d){
         if (d[field] == val){
             return true
@@ -262,6 +260,7 @@ HeatMap.prototype.getProp = function(array, field, val, out){
         else {return false}
     })
 
+    // return property of interest
     return temp[0][out]
 }
 
@@ -308,26 +307,30 @@ HeatMap.prototype.heatmapUpdate = function(value){
     }
 }
 
-// handle show gnps hits button push
+// handle show gnps button push
 HeatMap.prototype.show_hits = function(value){
 
     var that = this;
 
+    // if already showing
     if (this.hits){
         this.hits = false;
+        // transition back to normal quant or binary coloration, depending on mode
         this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){ 
             if (that.data_mode == "quant"){
                 return that.colorScale(d.value)
             }
-            else {
+            else { // if binary
                 if (d.value > 0){ return "darkgrey";}
                 else {return "white";}
             }
         })
     }
     
+    // if not showing
     else {
         this.hits = true;
+        // transition to red + quant or binary, depending on mode
         this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){ 
             if (that.data_mode == "quant"){
                 if (d.hit){ return "red"}
@@ -363,6 +366,7 @@ HeatMap.prototype.order = function(value){
         t.selectAll(".colLabel")
             .attr("y", function (d, i) { return that.cellWidth * (that.getProp(that.colinfo, "cmpd", d, "hcol") - 1); });
     }
+    
     // make transitions for sorting by name
     else if (value=="sort_name"){
 
@@ -420,4 +424,4 @@ HeatMap.prototype.sortbylabel =   function(rORc,i,sortOrder){
          t.selectAll(".rowLabel")
           .attr("y", function (d, i) { return sorted.indexOf(i) * that.cellSize; });
        }
-  }
+}

@@ -1,3 +1,5 @@
+'''PERFORMS GNPS LIB SEARCH/NETWORKING ON SPECTRA FILES'''
+
 import ftplib
 import argparse
 import sys
@@ -8,6 +10,7 @@ import getpass
 import os
 import glob
 
+# performs operation on GNPS FTP server
 def ftp(mode, path, basename, login, password):
 
 	ftp = ftplib.FTP("ccms-ftp01.ucsd.edu")
@@ -106,6 +109,7 @@ def launch_workflow(username, file_name, workflow):
 # BY M. WANG - miw023@cs.ucsd.edu
 def wait_for_workflow_finish(base_url, task_id):
 	url = 'https://' + base_url + '/ProteoSAFe/status_json.jsp?task=' + task_id
+	# checks status page of GNPS
 	json_obj = json.loads(requests.get(url, verify=False).text)
 	while (json_obj["status"] != "FAILED" and json_obj["status"] != "DONE"):
 		print("Working...")
@@ -134,6 +138,7 @@ def main():
 	in_dir = args.input
 	mode = args.mode
 
+	# get GNPS info
 	un = raw_input("GNPS username: ")
 	pw = getpass.getpass('Password: ')
 	base_url = "gnps.ucsd.edu"

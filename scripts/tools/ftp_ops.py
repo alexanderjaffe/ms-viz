@@ -1,3 +1,5 @@
+'''PERFORM FILE OPS ON AN FTP SERVER'''
+
 import ftplib
 import argparse
 import sys

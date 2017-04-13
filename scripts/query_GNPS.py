@@ -1,3 +1,5 @@
+'''PERFORMS GNPS LIB SEARCH/NETWORKING ON SPECTRA FILES'''
+
 import ftplib
 import argparse
 import sys
@@ -7,17 +9,22 @@ import time
 import getpass
 import glob
 
+
+# performs operation on GNPS FTP server
 def ftp(mode, path, basename, login, password):
 
+	# open connection
 	ftp = ftplib.FTP("ccms-ftp01.ucsd.edu")
 	try:
 		ftp.login(login, password)
 	except:
 		print "Login failed :/"
 		sys.exit()
+	#do the operation
 	if mode == "upload":
 		myfile = open(path, "rb")
 		try:
+			# use storbinary for larger files
 			ftp.storbinary("STOR " + basename, myfile)
 		except:
 			print "File upload failed :/"
@@ -44,6 +51,7 @@ def invoke_workflow(base_url, parameters, login, password):
 		'login' : 'Sign in'
 	}
 
+	# generate post request
 	r = s.post('https://' + base_url + '/ProteoSAFe/user/login.jsp', data=payload, verify=False)
 	r = s.post('https://' + base_url + '/ProteoSAFe/InvokeTools', data=parameters, verify=False)
 	task_id = r.text
@@ -107,6 +115,7 @@ def launch_workflow(username, file_name, workflow):
 def wait_for_workflow_finish(base_url, task_id):
 	
 	url = 'https://' + base_url + '/ProteoSAFe/status_json.jsp?task=' + task_id
+	# looks at status page on GNPS
 	json_obj = json.loads(requests.get(url, verify=False).text)
 	while (json_obj["status"] != "FAILED" and json_obj["status"] != "DONE"):
 		print("Working...")
@@ -129,6 +138,7 @@ def main():
 	args = parser.parse_args()
 	in_dir = args.input
 	
+	# get GNPS login info
 	un = raw_input("GNPS username: ")
 	pw = getpass.getpass('Password: ')
 	base_url = "gnps.ucsd.edu"
@@ -140,6 +150,7 @@ def main():
 	out_file = open("../data/gnps_LS_raw.json", "w")
 	final_json = []
 
+	# for all mgf files in directory, analyze!
 	for sample in glob.glob((in_dir+"/*mgf")):
 		
 		# get file name
@@ -157,6 +168,7 @@ def main():
 		url1 = 'https://' + base_url + '/ProteoSAFe/status.jsp?task=' + task_id1
 		log.write(basename + "\t" + "SEARCH\t"+json_results1+'\t' + url1 + '\n')
 		
+		# metabolic networking currently unused
 		'''# run metabolomic networking
 		print "Starting GNPS metabolomic networking..."
 		params2 = launch_workflow(un, basename, "network")

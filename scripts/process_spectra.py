@@ -1,3 +1,5 @@
+'''PROCESSES SPECTRA FOR VISUALIZATION/GNPS'''
+
 from pyteomics import mzxml
 import json
 import argparse
@@ -5,16 +7,14 @@ import glob
 import sys
 import math
 
+# given cmpd table and spectra file,
+# generates keyed list of spectra to keep
 def get_keepers(cmpd_table, spectra_file):
 
+   	# read in cmpd table
    	with open(cmpd_table) as f:
    		table = f.readlines()
    	f.close()
-
-   	# check for filtered cmpd_table
-   	'''if len(table) > 200:
-   		print "Error: Make sure to use compound table filtered for size/singletons."
-   		sys.exit()'''
 
    	# get cmpds to keep from cmpd_table
    	cmpds = []
@@ -46,12 +46,14 @@ def get_keepers(cmpd_table, spectra_file):
 	
 	return(keepers)
 
+# given keepers and sample names,
+# actually retrieves spectra to keep
 def retrieve_spectra(ms_run, basename, keepers_list):
-	
-	print ms_run, basename
 	
 	sample = mzxml.read(ms_run)
 	scans = []
+
+	# read through mzXML file
 	while True:
 		try:
 			# get next scan
@@ -109,7 +111,6 @@ def spectra_as_mgf(spectra, basename):
 		outfile.write("FILENAME=%s\n" %(spectrum["sample"]))
 		outfile.write("ACTIVATION=%s\n" %(pre["activationMethod"]))
 		outfile.write("INSTRUMENT=orbitrap\n")
-		#outfile.write("TITLE=%s\n")
 		outfile.write("SCANS=%s\n" %(spectrum["num"]))
 		for peak in spectrum["spectrum"]:
 			outfile.write(str(peak["mz"]) + " " + str(peak["i"]) + "\n")
@@ -138,7 +139,6 @@ def main():
 		basename = sample.split("/")[(len(sample.split("/"))-1)].replace(".mzXML", '')
 		print "Processing " + basename + ".mzXML"
 		# convert to json and combine into one giant file
-		#final_json[basename] = retrieve_spectra(sample, basename, keepers_dict)
 		results = retrieve_spectra(sample, basename, keepers_dict)
 		final_json = final_json + results
 		print "Total of %d spectra..." %(len(final_json))
@@ -146,6 +146,7 @@ def main():
 		# for each sample, create mgf for gnps analysis
 		spectra_as_mgf(results,basename)
 	
+	# write out spectra in json form
 	out_path = "../data/spectra.json"
 	with open(out_path, "w") as out_file:
 		out_file.write(json.dumps(final_json))

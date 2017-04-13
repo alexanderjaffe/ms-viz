@@ -2,7 +2,7 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Mass Spec Viz</title>
+    <title>TraxLab Proteomics Discovery Platform</title>
 
     <!-- ADD Libraries-->
     <script src="libs/d3/d3.min.js" charset="utf-8"></script>
@@ -53,16 +53,6 @@
             <div class="col-md-12" id="hmVis">
             </div>
         </div>
-                <!--<div class="container">
-            <div class="row">
-            <label class="checkbox-inline">
-                <input type="checkbox" id="order" checked data-on="Sorted" data-off="Clustered" data-toggle="toggle"> Order
-            </label>
-            <label class="checkbox-inline">
-                <input type="checkbox" id="data_type" data-on="Quantitative" checked data-off="Binary" data-toggle="toggle"> Data Type
-            </label>
-            </div>
-        </div> -->
         <div class="row" style="margin-left:100px;margin-top:20px">
             <div class="col-md-2" id = "order">
               <form>
@@ -108,7 +98,7 @@
                 // add in visualizations
                 var hm_vis = new HeatMap(d3.select("#hmVis"), hm_data, MyEventHandler);
                 var radar_vis = new RadarChart(d3.select("#radarVis"), hm_data, MyEventHandler);
-                var spec_vis = new CountVis(d3.select("#specVis"), spec_data, MyEventHandler);
+                var spec_vis = new SpectrumVis(d3.select("#specVis"), spec_data, MyEventHandler);
 
                 // bind eventHandlers to the Vis Objects
                 $(MyEventHandler).bind("selectionChanged", function(event, pass){
@@ -119,7 +109,6 @@
                     hm_vis.show_hits();
                 });
                 $(MyEventHandler).bind("cellMouseover", function(event, pass){
-                    //console.log(pass);
                     radar_vis.oncellMouse(pass);
 
                     // only trigger spectrum change if cmpd present
@@ -127,10 +116,12 @@
                         spec_vis.oncellMouse(pass);
                     }
 
+                    // update ticker, if there's a gnps hit
                     if (pass.hit){
                         text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", GNPS hit to " + pass.hit.slice(0,30) + " at score of " + pass.score.slice(0,4)
                         d3.select("#brushInfo").html(text)
                     }
+                    // if no gnps hit
                     else {
                         text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", no GNPS hit"
                         d3.select("#brushInfo").html(text)
@@ -140,7 +131,6 @@
             }
 
             // call this function after both files are loaded
-            // could apply data transformations here
             var dataLoaded = function (error, _gnps_data, _spec_data, _hm_data) {
 
                 if (!error) {
@@ -149,16 +139,14 @@
                     gnps_data = _gnps_data;
                     spec_data = _spec_data;
 
-                    console.log(hm_data);
-                    console.log(spec_data);
-                    console.log(gnps_data);
-
                     // get gnps info for each cell
                     hm_data.forEach(function(d){
 
+                        // get cmpd and sample
                         cmpd = d.cmpd.replace("#", "compound_")
                         sample = d.var
 
+                        // intermediate step - find cell in spectrum data
                         var intData = spec_data.filter(function(d){
 
                             if (d.compound == cmpd && d.sample == sample){
@@ -169,7 +157,7 @@
 
                         // only search if spectra found
                         if (intData.length > 0){
-                            // get scan no
+                            // get scan number
                             var scan_no = intData[0]["num"]
                             var mgf = sample + ".mgf"
 
@@ -181,6 +169,7 @@
                                 else {return false}
                             })
 
+                            // if hits found, add info
                             if (gnps.length > 0){
                                 d["hit"] = gnps[0]["Compound_Name"]
                                 d["score"] = gnps[0]["MQScore"]
@@ -196,7 +185,8 @@
                                 d["score"] = false
                             }
                     })
-
+                    
+                    // finally, initialize the viz
                     initVis();
                 }
             }
@@ -220,7 +210,6 @@
                 pass = {type:"data_type", value:this.value}
                 $(MyEventHandler).trigger("selectionChanged", pass)
             });
-
             d3.select("#show_hide").on("click",function(){
                 $(MyEventHandler).trigger("buttonClick")
             });

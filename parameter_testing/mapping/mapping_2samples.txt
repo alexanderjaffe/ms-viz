@@ -1,3 +1,0 @@
-file	sample	grouping
-data/LG60FAVA_2_1_071816.mzXML	test	test
-data/LG60FAVA_2_2_071816.mzXML	test	test
