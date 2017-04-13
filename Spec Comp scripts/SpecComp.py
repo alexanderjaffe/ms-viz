@@ -1,14 +1,15 @@
-#from __future__ import division
+from __future__ import division
+from multiprocessing import Pool  
 from pyteomics import mzxml
 import math
 import sys
 import numpy as np
 from scipy.sparse import csr_matrix, find
+from sklearn.preprocessing import normalize
 from sys import getsizeof
 from operator import itemgetter
 import argparse
-
-
+import time 
 
 
 ''' fast calculation of cosine similarity (csr)'''
@@ -44,16 +45,18 @@ def preprocess_sample(sample):
 	
 	print( str(len(scans)) + " scans found in " + sample)
 	
-	if len(scans) < 10:
+	if len(scans) < 200:
 		print( "Taking %s sample out" %(sample))
 		raise
+	else: 
+		print("Screening done")
 	
 	all_peaks = []
 	
 	# get frequency of ion ms2 by mz
 	mz_list = []
 	for scan in scans:
-		if scan['msLevel'] == '2':
+		if scan['msLevel'] == 2:
 			base_mz = scan['precursorMz'][0]['precursorMz']
 			mz_list.append(int(base_mz)*10000)
 
@@ -66,34 +69,31 @@ def preprocess_sample(sample):
 	base_peaks = {}
 
 	for scan in scans:
-		if scan['msLevel'] == '1':
-			num= scan['num']
+		if scan['msLevel'] == 1:
+			num= int(scan['num'])
 			intensity_array_MSI= scan['intensity array']
 			mzs_MSI= scan['m/z array']
 			TIC_MSI= scan['totIonCurrent']
 			msI_list[num]= {"num": num,"TIC": TIC_MSI, "mzs": mzs_MSI, "intensity": intensity_array_MSI}
-			intensity_array_MSI=None 
-			mzs_MSI=None 
-		elif scan['msLevel'] == '2':
-			num2 = scan['num']
-			ms1_scan_num= int(scan['precursorMz'][0]['precursorScanNum'])
-			msI_TIC= scans[ms1_scan_num]['totIonCurrent']
-			base_mz = scan['precursorMz'][0]['precursorMz']
-			mzs_MS2 = scan['m/z array']
-			intensity_array_ms2_temp= scan['intensity array']
-			intensity_array_ms2= intensity_array_ms2_temp/float(msI_TIC)
+		if scan['msLevel'] == 2:
 			
+			base_mz = scan['precursorMz'][0]['precursorMz']
 			init_scans +=1
-
+			#print mz_dict[(int(base_mz)*10000)] in mz_dict
 			#filter mzs to keep ions w/ > 10 occurrences
 			if mz_dict[(int(base_mz)*10000)] > 10:				
 				
 				end_scans +=1
-				base_peaks[num] = {"num":num2, "base_mz":base_mz, "intensities":intensity_array_ms2, "mzs":mzs_MS2, "MSI TIC": msI_TIC}
+				num2 = int(scan['num'])
+				ms1_scan_num= int(scan['precursorMz'][0]['precursorScanNum'])
+				msI_TIC= scans[ms1_scan_num]['totIonCurrent']	
+				precursor_intensity= scan['precursorMz'][0]['precursorIntensity']
+				mzs_MS2 = scan['m/z array']
+				intensity_array_ms2_temp= scan['intensity array']
+				intensity_array_ms2= intensity_array_ms2_temp/float(msI_TIC)
+
+				base_peaks[num2] = {"num":num2, "base_mz":base_mz, "intensities":intensity_array_ms2, "mzs":mzs_MS2, "MSI TIC": msI_TIC,"precursor_intensity": precursor_intensity}
 				all_peaks = all_peaks + mzs_MS2.tolist()
-			intensity_array_ms2=None 
-			intensity_array_ms2_temp=None
-			mzs_MS2=None 
 
 	peak_min = int(math.floor(min(all_peaks)))
 	peak_max = int(math.ceil(max(all_peaks)))
@@ -102,9 +102,7 @@ def preprocess_sample(sample):
 	all_peaks = None
 	scans = None
 	r = None
-	mz_dict=None
-	
-	
+	mz_list=None
 
 	print( "%d scans filtered out by ms2 freq" %(init_scans - end_scans))
 	#Returns a list of MS2 spectra organized by scan #, and the largest and smallest precursor peaks across all MS2 in this file.
@@ -147,13 +145,16 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 	already_calculated = []
 	peak_vectors_unique = []
 
+
 	f = open('sims_new', 'a+')
 	for scan in peak_vectors_list:
 		found = False
 		#Compare to every other scan < this scan's mz + 1.5 Da
 		for i in xrange(len(peak_vectors_unique)-1, -1, -1):
 			scan2 = peak_vectors_unique[i]
+			
 			mass_diff = sample_data[scan]['base_mz'] - sample_data[scan2[0]]['base_mz']
+			
 			if mass_diff <= 1.5:
 				#Calculate cosine similarity of these two scans' peak vectors
 				sim = fast_cosine(peak_vectors[scan], peak_vectors[scan2[0]])
@@ -171,16 +172,11 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 			peak_vectors_unique.append([scan])
 	f.close()
 
-
-
-
-
-
-
 	#Create final data for this sample, return
 	#Create consensus peaks for each "compound" (group of identical scans)
 	print( str(len(peak_vectors_unique))  + " unique clustered compounds found in this sample.")
 	final_peaks = {}
+	print("Creating consensus peaks...")
 	for scan_group in peak_vectors_unique:
 		if len(scan_group) > 1:
 			consensus_peak = peak_vectors[scan_group[0]]
@@ -200,23 +196,21 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				if sample_data[scan]['base_mz'] > biggest_mz:
 					biggest_mz = sample_data[scan]['base_mz']
 			
-			max_mz+= 0.001
-			min_mz-= 0.001 		
+			max_mz+= 0.0001
+			min_mz-= 0.0001 		
 
 			mz_num_list=[]
 			ms2_intensity_list=[]
 			mzs=[]
 
 
-			for msI, msI_items in msI_list.iteritems(): 
 
+
+			for msI, msI_items in msI_list.iteritems(): 	
 				for mz in msI_items["mzs"]: 
-
 					if (mz<=max_mz and mz>=min_mz): 
 						mz_num_list.append(msI_items["TIC"])
-						index=  msI_items["mzs"].index(mz)
-						#print index 
-						#sys.exit()
+						index=  msI_items["mzs"].tolist().index(mz)
 						ms2_intensity_list.append(msI_items["intensity"][index])
 			if len(mz_num_list)==0: 
 				print(max_mz, min_mz)
@@ -349,7 +343,7 @@ def main():
 
 
 	#Read in sample data from mapping file
-	__author__ = "Alex Crits-Christoph AND RYAN NGUYEN SUCK IT,MA HUNPS"
+	__author__ = "Alex Crits-Christoph, Alexander Jaffe AND RYAN NGUYEN SUCK IT,MA HUNPS"
 	parser = argparse.ArgumentParser(description='Processes a list of mzXML files as described in a mapping file to cluster and compare spectra across samples.')
 	parser.add_argument('-i','--input', help='Path to input mapping file (tab separated, "file	sample	grouping" 3+ column header',required=True)
 	parser.add_argument('-f','--filter_singletons', help="Do not include compounds that aren't replicated by at least 2 scans for a given sample. (similar to GNPS clusters)",required=False)
@@ -387,8 +381,6 @@ def main():
 	#Get MS2 peak data for all samples in this dataset.
 	print("Now Getting MS2...")
 	for sample in samples:
-
-
 		try:
 			new_min, new_max, new_peak_data,msI_data = preprocess_sample(sample)
 		except:
@@ -401,16 +393,11 @@ def main():
 		peak_data[sample] = new_peak_data
 		msI_list[sample]= msI_data  
 
-		#getting rid of more big variables...
 		new_peak_data=None 
-		msI_data=None 
-		sample=None 
-		raw_input("Press Enter to coninue...")
+		msI_data=None  
 
 	for sample in peak_data:
 		peak_data[sample] = vectorize_peak(peak_min, peak_max, peak_data[sample], sample,msI_list[sample])
-
-
 
 	#Compare samples
 	print( "Comparing samples..."	)
