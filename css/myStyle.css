@@ -92,3 +92,10 @@ text.text-hover {
     stroke: #000;
     shape-rendering: crispEdges;
 }
+
+button {
+    background-color:white;
+    border:1px solid grey;
+    padding:0px 3px;
+    border-radius: 4px
+}

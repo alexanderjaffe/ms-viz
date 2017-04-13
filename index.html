@@ -83,7 +83,10 @@
                 </select>
               </form>
             </div>
-            <div class="col-md-6" id = "legend">
+        <div class="col-md-2" id = "show_hide">
+            <button type="button" class="button">Show/Hide GNPS hits</button> 
+        </div>
+            <div class="col-md-4" id = "legend">
             </div>
         </div>
     </body> 
@@ -107,50 +110,13 @@
                 var radar_vis = new RadarChart(d3.select("#radarVis"), hm_data, MyEventHandler);
                 var spec_vis = new CountVis(d3.select("#specVis"), spec_data, MyEventHandler);
 
-                // get gnps data given cmpd + sample
-                var get_gnps_data = function(pass){
-
-                    cmpd = pass.cmpd.replace("#", "compound_")
-                    sample = pass.sample
-
-                    var intData = spec_data.filter(function(d){
-
-                        if (d.compound == cmpd && d.sample == sample){
-                            return true
-                        }
-                        else {return false}
-                    })
-
-                    // only search if value
-                    if (pass.value){
-                        // get scan no
-                        var scan_no = intData[0]["num"]
-                        var mgf = sample + ".mgf"
-
-                        console.log(mgf)
-
-                        // now search gnps data
-                        var gnps = gnps_data.filter(function(d){
-                            if (d["#Scan#"] == scan_no && d["SpectrumFile"]==mgf){
-                                return true
-                            }
-                            else {return false}
-                        })
-
-                        if (gnps.length > 0){
-                            return gnps[0]
-                        }
-                        else {return false}
-                    }
-
-                    else {return false}
-                    
-                }
-
                 // bind eventHandlers to the Vis Objects
                 $(MyEventHandler).bind("selectionChanged", function(event, pass){
                     hm_vis.onSelectionChange(pass);
                     radar_vis.onSelectionChange(pass);
+                });
+                $(MyEventHandler).bind("buttonClick", function(event){
+                    hm_vis.show_hits();
                 });
                 $(MyEventHandler).bind("cellMouseover", function(event, pass){
                     //console.log(pass);
@@ -161,11 +127,8 @@
                         spec_vis.oncellMouse(pass);
                     }
 
-                    // update ticker
-                    var results = get_gnps_data(pass);
-
-                    if (results){
-                        text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", GNPS hit to " + results["Compound_Name"].slice(0,30) + " at score of " + results["MQScore"].slice(0,4)
+                    if (pass.hit){
+                        text = " compound " + pass.cmpd + ", m/z: " + pass.mass.slice(0,6) + ", GNPS hit to " + pass.hit.slice(0,30) + " at score of " + pass.score.slice(0,4)
                         d3.select("#brushInfo").html(text)
                     }
                     else {
@@ -190,6 +153,50 @@
                     console.log(spec_data);
                     console.log(gnps_data);
 
+                    // get gnps info for each cell
+                    hm_data.forEach(function(d){
+
+                        cmpd = d.cmpd.replace("#", "compound_")
+                        sample = d.var
+
+                        var intData = spec_data.filter(function(d){
+
+                            if (d.compound == cmpd && d.sample == sample){
+                                return true
+                            }
+                            else {return false}
+                        })
+
+                        // only search if spectra found
+                        if (intData.length > 0){
+                            // get scan no
+                            var scan_no = intData[0]["num"]
+                            var mgf = sample + ".mgf"
+
+                            // now search gnps data
+                            var gnps = gnps_data.filter(function(d){
+                                if (d["#Scan#"] == scan_no && d["SpectrumFile"]==mgf){
+                                    return true
+                                }
+                                else {return false}
+                            })
+
+                            if (gnps.length > 0){
+                                d["hit"] = gnps[0]["Compound_Name"]
+                                d["score"] = gnps[0]["MQScore"]
+                            }
+                            else {
+                                d["hit"] = false
+                                d["score"] = false
+                            }
+                        }
+
+                        else {
+                                d["hit"] = false
+                                d["score"] = false
+                            }
+                    })
+
                     initVis();
                 }
             }
@@ -212,6 +219,10 @@
             d3.select("#data_type").select("select").on("change",function(){
                 pass = {type:"data_type", value:this.value}
                 $(MyEventHandler).trigger("selectionChanged", pass)
+            });
+
+            d3.select("#show_hide").on("click",function(){
+                $(MyEventHandler).trigger("buttonClick")
             });
 
             startHere();

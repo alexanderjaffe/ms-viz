@@ -1,0 +1,17 @@
+sample_count	unique_cmpds	group
+2	8	wild
+3	8	wild
+4	12	wild
+5	13	wild
+6	58	wild
+7	88	wild
+8	165	wild
+9	169	wild
+10	175	wild
+11	185	wild
+12	185	wild
+13	213	wild
+14	234	wild
+15	264	wild
+16	292	wild
+17	307	wild

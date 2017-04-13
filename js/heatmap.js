@@ -27,6 +27,10 @@ HeatMap.prototype.initVis = function(){
     this.rowSortOrder=false;
     this.colSortOrder=false;
     this.colorScale = d3.scale.linear()
+    // initalize data mode
+    this.data_mode = "quant";
+    // initialize GNPS hits
+    this.hits = false
     
     // add plotting space
     this.svg = this.parentElement.append("svg")
@@ -58,8 +62,9 @@ HeatMap.prototype.wrangleData = function(){
             ccol: +parseInt(d.ccol),
             sample: d.var,
             cmpd: d.cmpd,
-            mass: d.Mass
-
+            mass: d.Mass,
+            hit: d.hit,
+            score: d.score
         };
     })
 
@@ -169,7 +174,7 @@ HeatMap.prototype.updateVis = function(){
             // highlight radar label
             d3.select(".label" + d.sample).style("fill","red")
             // trigger event for spectrum viz
-            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"on", value: (d.value > 0)})
+            $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"on", value: (d.value > 0), hit: d.hit, score: d.score})
             
         })
         .on("mouseout", function(d){
@@ -189,7 +194,7 @@ HeatMap.prototype.updateVis = function(){
     // add in legend
 
     var lh = 50;
-    var lw = 600;
+    var lw = 400;
 
     var key = d3.select("#legend").append("svg").attr("width", lw).attr("height", lh);
 
@@ -264,13 +269,17 @@ HeatMap.prototype.getProp = function(array, field, val, out){
 HeatMap.prototype.heatmapUpdate = function(value){
 
     var that = this;
+    // update data mode
+    this.data_mode = value;
 
     var t = this.svg.transition().duration(1500);
 
     if (value == "quant"){
         // cells
         t.selectAll(".cell")
-            .style("fill", function(d) { return that.colorScale(d.value); });
+            .style("fill", function(d) { 
+                if (d.hit){ return "red"}
+                else {return that.colorScale(d.value); }});
 
         //legend
         d3.selectAll(".gradienthi").transition().duration(1500).attr("stop-color","blue")
@@ -285,7 +294,8 @@ HeatMap.prototype.heatmapUpdate = function(value){
         // cells
         t.selectAll(".cell")
             .style("fill", function(d){
-                if (d.value > 0){ return "darkgrey";}
+                if (d.hit) {return "red"}
+                else if (d.value > 0){ return "darkgrey";}
                 else {return "white";}
             });
         // legend
@@ -296,6 +306,41 @@ HeatMap.prototype.heatmapUpdate = function(value){
             .call(that.legend_axis)
         d3.selectAll(".legendtext").style("visibility","hidden")
     }
+}
+
+// handle show gnps hits button push
+HeatMap.prototype.show_hits = function(value){
+
+    var that = this;
+
+    if (this.hits){
+        this.hits = false;
+        this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){ 
+            if (that.data_mode == "quant"){
+                return that.colorScale(d.value)
+            }
+            else {
+                if (d.value > 0){ return "darkgrey";}
+                else {return "white";}
+            }
+        })
+    }
+    
+    else {
+        this.hits = true;
+        this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){ 
+            if (that.data_mode == "quant"){
+                if (d.hit){ return "red"}
+                    else {return that.colorScale(d.value)}
+            }
+            else {
+                if (d.hit){return "red"}
+                else if (d.value > 0){ return "darkgrey";}
+                else {return "white";}
+            }
+        })
+    }
+
 }
 
 // order cells on user input

@@ -1,0 +1,13 @@
+sample_count	unique_cmpds	group
+2	33	lab-grown
+3	38	lab-grown
+4	70	lab-grown
+5	79	lab-grown
+6	88	lab-grown
+7	90	lab-grown
+8	210	lab-grown
+9	288	lab-grown
+10	351	lab-grown
+11	383	lab-grown
+12	514	lab-grown
+13	531	lab-grown
