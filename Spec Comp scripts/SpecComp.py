@@ -177,6 +177,7 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 	print( str(len(peak_vectors_unique))  + " unique clustered compounds found in this sample.")
 	final_peaks = {}
 	print("Creating consensus peaks...")
+	count=0 
 	for scan_group in peak_vectors_unique:
 		if len(scan_group) > 1:
 			consensus_peak = peak_vectors[scan_group[0]]
@@ -196,12 +197,12 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				if sample_data[scan]['base_mz'] > biggest_mz:
 					biggest_mz = sample_data[scan]['base_mz']
 			
-			max_mz+= 0.0001
-			min_mz-= 0.0001 		
+			max_mz+= 0.00005
+			min_mz-= 0.00005 		
 
 			mz_num_list=[]
 			ms2_intensity_list=[]
-			mzs=[]
+
 
 
 
@@ -210,8 +211,10 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				for mz in msI_items["mzs"]: 
 					if (mz<=max_mz and mz>=min_mz): 
 						mz_num_list.append(msI_items["TIC"])
-						index=  msI_items["mzs"].tolist().index(mz)
-						ms2_intensity_list.append(msI_items["intensity"][index])
+						index=  np.extract(msI_items["mzs"]==mz, msI_items["mzs"])
+						ms2_intensity_list.append(msI_items["intensity"][index[0]])
+					elif(mz> max_mz):
+						break
 			if len(mz_num_list)==0: 
 				print(max_mz, min_mz)
 				for scan in scan_group: 
@@ -244,6 +247,7 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 			peak_data['base_mz'] = biggest_mz
 			peak_data['percent composition']=percentComp
 			final_peaks[scan1] = peak_data
+			
 		else:
 			scan1 = scan_group[0]
 			peak_data = sample_data[scan1]
@@ -251,7 +255,8 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 			peak_data['origin'] = str(peak_data['num'])
 			peak_data['percent composition']= peak_data['precursor_intensity']/peak_data['MSI TIC'] 
 			final_peaks[scan1] = peak_data
-
+		count +=1
+		print "Scan group clustered: " + str(count)
 	return final_peaks
 
 '''
