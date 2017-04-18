@@ -71,7 +71,7 @@ def launch_workflow(username, file_name, workflow):
 	parameters_map["FILTER_LIBRARY"] = 0
 	parameters_map["FILTER_PRECURSOR_WINDOW"] = 1
 	parameters_map["FILTER_STDDEV_PEAK_INT"] = 0
-	parameters_map["library_on_server"] = "d.speclibs"
+	parameters_map["library_on_server"] = "d.speclibs, d.speclibs/GNPS-SELLECKCHEM-FDA-PART1/GNPS-SELLECKCHEM-FDA-PART1.mgf"
 	parameters_map["MAX_SHIFT_MASS"] = 100.0
 	parameters_map["MIN_MATCHED_PEAKS"] = 6
 	parameters_map["MIN_PEAK_INT"] = 50.0

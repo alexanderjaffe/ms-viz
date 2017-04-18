@@ -121,7 +121,7 @@ def spectra_as_mgf(spectra, basename):
 def main():
 
 	__author__ = "Alexander L. Jaffe"
-	parser = argparse.ArgumentParser(description='Converts a set of mzxml to json format for d3 viz and mgf file for gnps querying.')
+	parser = argparse.ArgumentParser(description='Converts a set of mzxml to json format for d3 viz and mgf files for gnps querying.')
 	parser.add_argument('-i','--input', help='Path to directory of mzxml.',required=True)
 	parser.add_argument('-c','--compound_table', help='Path to filtered compound table.',required=True)
 	parser.add_argument('-s','--spectra_file', help='Path to spectra mapping file.',required=True)

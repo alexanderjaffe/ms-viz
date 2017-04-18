@@ -277,7 +277,7 @@ HeatMap.prototype.heatmapUpdate = function(value){
         // cells
         t.selectAll(".cell")
             .style("fill", function(d) { 
-                if (d.hit){ return "red"}
+                if (d.hit && that.hits){ return "red"}
                 else {return that.colorScale(d.value); }});
 
         //legend
@@ -293,7 +293,7 @@ HeatMap.prototype.heatmapUpdate = function(value){
         // cells
         t.selectAll(".cell")
             .style("fill", function(d){
-                if (d.hit) {return "red"}
+                if (d.hit && that.hits) {return "red"}
                 else if (d.value > 0){ return "darkgrey";}
                 else {return "white";}
             });
