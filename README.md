@@ -3,9 +3,19 @@ MS2 visualization and analysis tool to be used in conjunction with [mzStats](htt
 
 ## Tutorial
 
+### Download and configure
+
+Download the ms-viz folder using the "Clone or Download button" on the top right.
+
+In your terminal, navigate to the ms-viz-master folder and create a "data" directory.
+
+```mkdir data```
+
+Now, you're ready to run the pipeline.
+
 ### Process spectra
 
-````
+```
 usage: process_spectra.py [-h] -i INPUT -c COMPOUND_TABLE -s SPECTRA_FILE
 
 Converts a set of mzxml to json format for d3 viz and mgf files for gnps
@@ -20,6 +30,9 @@ optional arguments:
   -s SPECTRA_FILE, --spectra_file SPECTRA_FILE
                         Path to spectra mapping file.
 ```
+
+For example: ```test```
+
 ### Query GNPS
 
 ```
