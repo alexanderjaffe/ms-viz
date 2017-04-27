@@ -1,5 +1,5 @@
 from __future__ import division
-from multiprocessing import Pool  
+import multiprocessing
 from pyteomics import mzxml
 import math
 import sys
@@ -9,7 +9,10 @@ from sklearn.preprocessing import normalize
 from sys import getsizeof
 from operator import itemgetter
 import argparse
-import time 
+from functools import partial
+from datetime import datetime
+import smtplib
+
 
 
 ''' fast calculation of cosine similarity (csr)'''
@@ -47,76 +50,72 @@ def preprocess_sample(sample):
 	
 	if len(scans) < 200:
 		print( "Taking %s sample out" %(sample))
-		raise
+		return "Invalid","Invalid","Invalid","Invalid", sample
 	else: 
-		print("Screening done")
+		print("Valid Sample Processed")
 	
-	all_peaks = []
-	
-	# get frequency of ion ms2 by mz
-	mz_list = []
-	for scan in scans:
-		if scan['msLevel'] == 2:
-			base_mz = scan['precursorMz'][0]['precursorMz']
-			mz_list.append(int(base_mz)*10000)
+		all_peaks = []
+		
+		# get frequency of ion ms2 by mz
+		mz_list = []
+		for scan in scans:
+			if scan['msLevel'] == 2:
+				base_mz = scan['precursorMz'][0]['precursorMz']
+				mz_list.append(int(base_mz*10000))
 
-	mz_dict = {x:mz_list.count(x) for x in mz_list}
+		mz_dict = {x:mz_list.count(x) for x in mz_list}
 
-	#print( "Scanning scans in scan... "
-	init_scans = 0
-	end_scans = 0
-	msI_list={}
-	base_peaks = {}
+		#print( "Scanning scans in scan... "
+		init_scans = 0
+		end_scans = 0
+		msI_list={}
+		base_peaks = {}
 
-	for scan in scans:
-		if scan['msLevel'] == 1:
-			num= int(scan['num'])
-			intensity_array_MSI= scan['intensity array']
-			mzs_MSI= scan['m/z array']
-			TIC_MSI= scan['totIonCurrent']
-			msI_list[num]= {"num": num,"TIC": TIC_MSI, "mzs": mzs_MSI, "intensity": intensity_array_MSI}
-		if scan['msLevel'] == 2:
-			
-			base_mz = scan['precursorMz'][0]['precursorMz']
-			init_scans +=1
-			#print mz_dict[(int(base_mz)*10000)] in mz_dict
-			#filter mzs to keep ions w/ > 10 occurrences
-			if mz_dict[(int(base_mz)*10000)] > 10:				
+		for scan in scans:
+			if scan['msLevel'] == 1:
+				num= int(scan['num'])
+				intensity_array_MSI= scan['intensity array']
+				mzs_MSI= scan['m/z array']
+				TIC_MSI= scan['totIonCurrent']
+				msI_list[num]= {"num": num,"TIC": TIC_MSI, "mzs": mzs_MSI, "intensity": intensity_array_MSI}
+			if scan['msLevel'] == 2:
 				
-				end_scans +=1
-				num2 = int(scan['num'])
-				ms1_scan_num= int(scan['precursorMz'][0]['precursorScanNum'])
-				msI_TIC= scans[ms1_scan_num]['totIonCurrent']	
-				precursor_intensity= scan['precursorMz'][0]['precursorIntensity']
-				mzs_MS2 = scan['m/z array']
-				intensity_array_ms2_temp= scan['intensity array']
-				intensity_array_ms2= intensity_array_ms2_temp/float(msI_TIC)
+				base_mz = scan['precursorMz'][0]['precursorMz']
+				init_scans +=1
+				#print mz_dict[(int(base_mz)*10000)] in mz_dict
+				#filter mzs to keep ions w/ > 10 occurrences
+				if mz_dict[int(base_mz*10000)] > 3: 				
+					
+					end_scans +=1
+					num2 = int(scan['num'])
+					ms1_scan_num= int(scan['precursorMz'][0]['precursorScanNum'])
+					msI_TIC= scans[ms1_scan_num]['totIonCurrent']	
+					precursor_intensity= scan['precursorMz'][0]['precursorIntensity']
+					mzs_MS2 = scan['m/z array']
+					intensity_array_ms2_temp= scan['intensity array']
+					intensity_array_ms2= intensity_array_ms2_temp/float(msI_TIC)
 
-				base_peaks[num2] = {"num":num2, "base_mz":base_mz, "intensities":intensity_array_ms2, "mzs":mzs_MS2, "MSI TIC": msI_TIC,"precursor_intensity": precursor_intensity}
-				all_peaks = all_peaks + mzs_MS2.tolist()
+					base_peaks[num2] = {"num":num2, "base_mz":base_mz, "intensities":intensity_array_ms2, "mzs":mzs_MS2, "MSI TIC": msI_TIC,"precursor_intensity": precursor_intensity}
+					all_peaks = all_peaks + mzs_MS2.tolist()
 
-	peak_min = int(math.floor(min(all_peaks)))
-	peak_max = int(math.ceil(max(all_peaks)))
+		peak_min = int(math.floor(min(all_peaks)))
+		peak_max = int(math.ceil(max(all_peaks)))
 
-	#"Get rid of really big variables and hoping to the MS Gods that this doesn't shut down..." 
-	all_peaks = None
-	scans = None
-	r = None
-	mz_list=None
+		#"Get rid of really big variables and hoping to the MS Gods that this doesn't shut down..." 
+		all_peaks = None
+		scans = None
+		r = None
+		mz_list=None
 
-	print( "%d scans filtered out by ms2 freq" %(init_scans - end_scans))
-	#Returns a list of MS2 spectra organized by scan #, and the largest and smallest precursor peaks across all MS2 in this file.
-	return peak_min, peak_max, base_peaks,msI_list
+		print( "%d scans filtered out by ms2 freq from sample %s" %((init_scans - end_scans),sample))
+		#Returns a list of MS2 spectra organized by scan #, and the largest and smallest precursor peaks across all MS2 in this file.
+		return peak_min, peak_max, base_peaks,msI_list, sample
+	#return base_peaks
+def vectorize_peak(peak_min, peak_max, parameters):	
 
-
-
-'''
-(1) Converts all of the MS2 peak lists in a sample to a vectorized format.
-(2) Removes non-unique MS2 spectra (precursor mass delta of 3 mz; cosine similarity > 0.97)
-(3) Creates a weighted consensus spectra for near-identical MS2 spectra
-'''
-def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):	
-
+	sample_data	= parameters[0]
+	msI_list= parameters[1]
+	sample_name= parameters[2]
 	#initializes peak vector (intervals of 0.1 so multiple all values by 10)
 	vector_length = ( peak_max - peak_min ) * 10
 	peak_vectors_list = []
@@ -197,13 +196,13 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				if sample_data[scan]['base_mz'] > biggest_mz:
 					biggest_mz = sample_data[scan]['base_mz']
 			
-			max_mz+= 0.00005
-			min_mz-= 0.00005 		
+			max_mz+= 0.001
+			min_mz-= 0.001 		
 
 			mz_num_list=[]
 			ms2_intensity_list=[]
 
-
+			#print "Now doing percent comp"
 
 
 
@@ -211,14 +210,14 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 				for mz in msI_items["mzs"]: 
 					if (mz<=max_mz and mz>=min_mz): 
 						mz_num_list.append(msI_items["TIC"])
-						index=  np.extract(msI_items["mzs"]==mz, msI_items["mzs"])
-						ms2_intensity_list.append(msI_items["intensity"][index[0]])
+						index=  np.where(msI_items["mzs"]==mz)
+						ms2_intensity_list.append(msI_items["intensity"][index[0][0]])
 					elif(mz> max_mz):
 						break
 			if len(mz_num_list)==0: 
 				print(max_mz, min_mz)
-				for scan in scan_group: 
-					print (sample_data[scan]["base_mz"])	
+				for scan in scan_group:     
+  					print (sample_data[scan]["base_mz"])	
 			msI_TIC_sum=0
 			ms2_intensity_sum=0 			
 			#print mz_num_list,scan_group
@@ -257,7 +256,7 @@ def vectorize_peak(peak_min, peak_max, sample_data, sample_name, msI_list):
 			final_peaks[scan1] = peak_data
 		count +=1
 		print "Scan group clustered: " + str(count)
-	return final_peaks
+	return final_peaks, sample_name
 
 '''
 Compares all ms2 between samples and creates a compound abundance table for all compounds across all samples.
@@ -344,9 +343,41 @@ def compare_samples(samples_data, output_file):
 	f.close()
 	f2.close()
 
+def sendEmail():
+
+	TO= 'rnguyen2018@berkeley.edu'
+	SUBJECT= "Send email with Python"
+
+	TEXT = 'Your process is done!'
+
+	### Gmail credentials 
+	gmail_sender= "rnwin7@gmail.com"
+	gmail_passswd= "nuzzles2"
+
+	server= smtplib.SMTP('smtp.gmail.com', 587)
+
+	server.ehlo()
+
+	server.starttls()
+	server.login(gmail_sender, gmail_passswd)
+	mail= "Your process is done"
+	# BODY ='\r\n'.join([
+	# 	'To: %s' % TO,
+	# 	'From: %s' % gmail_sender,
+	# 	"Subject: %s" %SUBJECT, 
+	# 	'',TEXT
+	# 	])
+
+	try: 
+		server.sendmail(gmail_sender, TO, mail)
+		print "email sent"
+	except: 
+		print 'error sending message'
+
+	server.quit()
+
 def main():
-
-
+	startTime = datetime.now()
 	#Read in sample data from mapping file
 	__author__ = "Alex Crits-Christoph, Alexander Jaffe AND RYAN NGUYEN SUCK IT,MA HUNPS"
 	parser = argparse.ArgumentParser(description='Processes a list of mzXML files as described in a mapping file to cluster and compare spectra across samples.')
@@ -357,6 +388,7 @@ def main():
 
 	args = parser.parse_args()
 
+	print "Process now running! "
 	if not args.output:
 		output_file = "compound_table.txt"
 	else:
@@ -374,6 +406,9 @@ def main():
 		else:
 			i += 1
 	f.close()
+	print len(samples)
+
+
 
 	#Preprocess all samples
 
@@ -385,28 +420,62 @@ def main():
 
 	#Get MS2 peak data for all samples in this dataset.
 	print("Now Getting MS2...")
-	for sample in samples:
-		try:
-			new_min, new_max, new_peak_data,msI_data = preprocess_sample(sample)
-		except:
-			continue
 
-		if new_min < peak_min:
-			peak_min = new_min
-		if new_max > peak_max:
-			peak_max = new_max
-		peak_data[sample] = new_peak_data
-		msI_list[sample]= msI_data  
+	pool = multiprocessing.Pool(processes=10)
+	results = pool.map(preprocess_sample, samples)
 
-		new_peak_data=None 
-		msI_data=None  
+	pool.close()
+	pool.join()
 
-	for sample in peak_data:
-		peak_data[sample] = vectorize_peak(peak_min, peak_max, peak_data[sample], sample,msI_list[sample])
+	peak_max_list=[]
+	peak_min_list=[]
+	new_sample_list=[]
+	for parameters in results:  
+		if parameters[0] != "Invalid": 
+			peak_min_list.append(parameters[0])
+			new_sample_list.append(parameters[4])
+		if parameters[1] !="Invalid": 
+			peak_max_list.append(parameters[1])
+		if parameters[2] !="Invalid" :	
+			peak_data[parameters[4]]= parameters[2]
+		if parameters[3] !="Invalid" :	
+			msI_list[parameters[4]]= parameters[3]
+	for small_peak in peak_min_list:
+		if small_peak < peak_min:
+			peak_min = small_peak
+	for big_peak in peak_max_list:
+		if big_peak > peak_max:
+			peak_max = big_peak
+	print peak_max, peak_min 
+	print "Now vectorizing peaks..."
+	process_length= 2
+	mod= len(new_sample_list)%process_length
+	sample_list_chunks= []
+	for i in range(0, len(new_sample_list), process_length):
+		sample_list_chunks.append(new_sample_list[i:i+process_length])
+	if(mod!=0):
+		sample_list_chunks.append(new_sample_list[-mod:])	
+	print "Samples have been chunked!"
 
-	#Compare samples
+
+	pool2 = multiprocessing.Pool(processes=10)
+	print "pool made!"
+	func= partial(vectorize_peak, peak_min,peak_max)
+	results2= pool2.map(func,((peak_data[sample], msI_list[sample], sample) for sample in new_sample_list))
+
+	pool2.close()
+	pool2.join()	 
+
+	for parameters in results2: 
+		peak_data[parameters[1]]=parameters[0]  
+
 	print( "Comparing samples..."	)
 	compare_samples(peak_data, output_file)
 
+	sendMail()
+	print datetime.now() - startTime
+	print "Done!"
+
 if __name__ == '__main__':
 	main()
+
