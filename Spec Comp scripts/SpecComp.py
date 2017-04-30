@@ -472,7 +472,7 @@ def main():
 	print( "Comparing samples..."	)
 	compare_samples(peak_data, output_file)
 
-	sendMail()
+	sendEmail()
 	print datetime.now() - startTime
 	print "Done!"
 
