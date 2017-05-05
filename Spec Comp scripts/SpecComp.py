@@ -12,7 +12,7 @@ import argparse
 from functools import partial
 from datetime import datetime
 import smtplib
-
+import string
 
 
 ''' fast calculation of cosine similarity (csr)'''
@@ -84,7 +84,7 @@ def preprocess_sample(sample):
 				init_scans +=1
 				#print mz_dict[(int(base_mz)*10000)] in mz_dict
 				#filter mzs to keep ions w/ > 10 occurrences
-				if mz_dict[int(base_mz*10000)] > 3: 				
+				if mz_dict[int(base_mz*10000)] > 3 or base_mz>=800: 				
 					
 					end_scans +=1
 					num2 = int(scan['num'])
@@ -196,8 +196,8 @@ def vectorize_peak(peak_min, peak_max, parameters):
 				if sample_data[scan]['base_mz'] > biggest_mz:
 					biggest_mz = sample_data[scan]['base_mz']
 			
-			max_mz+= 0.001
-			min_mz-= 0.001 		
+			max_mz+= 0.05
+			min_mz-= 0.05 		
 
 			mz_num_list=[]
 			ms2_intensity_list=[]
@@ -346,13 +346,14 @@ def compare_samples(samples_data, output_file):
 def sendEmail():
 
 	TO= 'rnguyen2018@berkeley.edu'
-	SUBJECT= "Send email with Python"
+	FROM= 'traxspectrometry@gmail.com'
+	SUBJECT= "Preprocess job"
 
 	TEXT = 'Your process is done!'
 
 	### Gmail credentials 
-	gmail_sender= "rnwin7@gmail.com"
-	gmail_passswd= "nuzzles2"
+	gmail_sender= "traxspectrometry@gmail.com"
+	gmail_passswd= "Skywalker"
 
 	server= smtplib.SMTP('smtp.gmail.com', 587)
 
@@ -360,16 +361,17 @@ def sendEmail():
 
 	server.starttls()
 	server.login(gmail_sender, gmail_passswd)
-	mail= "Your process is done"
-	# BODY ='\r\n'.join([
-	# 	'To: %s' % TO,
-	# 	'From: %s' % gmail_sender,
-	# 	"Subject: %s" %SUBJECT, 
-	# 	'',TEXT
-	# 	])
+	mail= "Your process is done. Please check the main computer in the lab under the output file to view your results"
+	BODY = string.join((
+	        "From: %s" % FROM,
+	        "To: %s" % TO,
+	        "Subject: %s" % SUBJECT ,
+	        "",
+	        mail
+	        ), "\r\n")
 
 	try: 
-		server.sendmail(gmail_sender, TO, mail)
+		server.sendmail(gmail_sender, TO, BODY)
 		print "email sent"
 	except: 
 		print 'error sending message'
