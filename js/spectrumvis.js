@@ -1,7 +1,7 @@
 /* Responsive spectrum visualization, based on line chart templates. */
 
 SpectrumVis = function(_parentElement, _data, _eventHandler){
-    
+
     this.parentElement = _parentElement;
     this.data = _data;
     this.eventHandler = _eventHandler;
@@ -79,7 +79,7 @@ SpectrumVis.prototype.wrangleData= function(pass){
     if (pass){
 
         cmpd = pass.cmpd.replace("#", "compound_")
-        sample = pass.sample
+        sample = pass.sample + ".mzXML"
 
         this.intData = this.data.filter(function(d){
 
@@ -127,7 +127,7 @@ SpectrumVis.prototype.updateVis = function(){
         .transition().duration(t)
         .call(this.yAxis)
 
-    // bind new data 
+    // bind new data
     var peaks = this.svg.selectAll(".peaks")
         .data(this.displayData)
 
@@ -154,7 +154,7 @@ SpectrumVis.prototype.updateVis = function(){
                 else {return "hidden"}
         })
 
-    // ENTER - add any new groups and set class attribute 
+    // ENTER - add any new groups and set class attribute
     var peaks = peaks.enter().append("g").attr("class", "peaks")
 
     // add elements to these groups
@@ -216,7 +216,7 @@ SpectrumVis.prototype.oncellMouse= function (pass){
 
 // from https://gist.github.com/IceCreamYou/6ffa1b18c4c8f6aeaad2
 SpectrumVis.prototype.percentile = function (arr, p) {
-    
+
     if (arr.length === 0) return 0;
     if (typeof p !== 'number') throw new TypeError('p must be a number');
     if (p <= 0) return arr[0];
@@ -228,6 +228,6 @@ SpectrumVis.prototype.percentile = function (arr, p) {
         weight = index % 1;
 
     if (upper >= arr.length) return arr[lower];
-    
+
     return arr[lower] * (1 - weight) + arr[upper] * weight;
 }

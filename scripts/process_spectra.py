@@ -6,6 +6,7 @@ import argparse
 import glob
 import sys
 import math
+import os
 
 # given cmpd table and spectra file,
 # generates keyed list of spectra to keep
@@ -29,12 +30,13 @@ def get_keepers(cmpd_table, spectra_file):
 		cmpd = line.split("|")[0]
 		# only keep cmpds from cmpd table
 		if cmpd in cmpds:
-			# iterate through spectra entries and add to dict 
+			# iterate through spectra entries and add to dict
 			for element in line.strip("\n").split("|"):
 				if "mzXML" in element:
 					path = element.split("$")[0]
 					# parse out sample name and spectra
-					sample = path.split("/")[len(path.split("/"))-1].replace(".mzXML",'')
+					#sample = path.split("/")[len(path.split("/"))-1].replace(".mzXML",'')
+					sample = os.path.basename(path)
 					# take first spectrum as representative
 					spectrum = element.split("$")[1].split(",")[0]
 					# build sample: spectra to keep dict
@@ -43,15 +45,17 @@ def get_keepers(cmpd_table, spectra_file):
 					else:
 						keepers[sample][spectrum] = cmpd
 	f2.close()
-	
+
 	return(keepers)
 
 # given keepers and sample names,
 # actually retrieves spectra to keep
 def retrieve_spectra(ms_run, basename, keepers_list):
-	
+
 	sample = mzxml.read(ms_run)
 	scans = []
+
+	#print keepers_list[basename].keys()
 
 	# read through mzXML file
 	while True:
@@ -60,6 +64,7 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 			next_scan = sample.next()
 			# filter for keepers
 			if next_scan["num"] in keepers_list[basename].keys():
+
 				# convert np arrays to json-friendly lists, and round vals
 				ia = [round(val,2) for val in next_scan["intensity array"]]
 				mz = [math.floor(val*10)/10 for val in next_scan["m/z array"]]
@@ -88,7 +93,7 @@ def retrieve_spectra(ms_run, basename, keepers_list):
 					scans.append(next_scan)
 		except:
 			break
-	
+
 	return(scans)
 
 # convert list of processed spectra to mgf
@@ -136,8 +141,9 @@ def main():
 	# select all mzXML in in_dir
 	for sample in glob.glob((in_dir+"/*mzXML")):
 		# get file name
-		basename = sample.split("/")[(len(sample.split("/"))-1)].replace(".mzXML", '')
-		print "Processing " + basename + ".mzXML"
+		#basename = sample.split("/")[(len(sample.split("/"))-1)].replace(".mzXML", '')
+		basename = os.path.basename(sample)
+		print "Processing " + basename
 		# convert to json and combine into one giant file
 		results = retrieve_spectra(sample, basename, keepers_dict)
 		final_json = final_json + results
@@ -145,12 +151,12 @@ def main():
 
 		# for each sample, create mgf for gnps analysis
 		spectra_as_mgf(results,basename)
-	
+
 	# write out spectra in json form
 	out_path = "../data/spectra.json"
 	with open(out_path, "w") as out_file:
 		out_file.write(json.dumps(final_json))
 	out_file.close()
-	
+
 if __name__ == '__main__':
 	main()

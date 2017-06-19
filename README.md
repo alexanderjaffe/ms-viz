@@ -5,7 +5,7 @@ MS2 visualization and analysis tool to be used in conjunction with [mzStats](htt
 
 ### Download and configure
 
-Download the ms-viz folder using the "Clone or Download button" on the top right.
+Download the ms-viz folder using the "Clone or download" button on the top right of this page.
 
 In your terminal, navigate to the ms-viz-master folder and create a "data" directory.
 
