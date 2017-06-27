@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import scipy.cluster.hierarchy as hac
 import numpy as np
+import os
 
 # given raw json, and a list of fields,
 # generates cleaned json
@@ -31,7 +32,7 @@ def reformat_search(raw_json, keepers):
 def tabularize_search(processed_json, fields):
 
 	table_out = open("../data/gnps_LS.table","w")
-	
+
 	# write out header
 	headers = "\t".join(fields)
 	table_out.write(headers + "\n")
@@ -54,7 +55,7 @@ def tabularize_search(processed_json, fields):
 def cluster_and_melt(cmpd_table, min_mz, max_mz):
 
 	intab = pd.read_csv(cmpd_table)
-	
+
 	# filtering based on mz
 	# convert mass to number
 	intab["temp"] = intab["Mass"].apply(lambda x: float(x.split("+-")[0]))
@@ -69,7 +70,7 @@ def cluster_and_melt(cmpd_table, min_mz, max_mz):
 	cmpd_dicts = []
 	for keys, items in table.iterrows():
 		temp_dict = {"cmpd":items.Compound, "sample_count":0}
-	
+
 		# if > 0, cmpd is 'present'
 		for i in range(2,(len(items)-1)):
 			if items[i] > 0:
@@ -78,11 +79,11 @@ def cluster_and_melt(cmpd_table, min_mz, max_mz):
 		cmpd_dicts.append(temp_dict)
 
 	# now sort cmpds by number of times they appear across samples
-	cmpd_dicts_sorted = sorted(cmpd_dicts, key=lambda k: k['sample_count'], reverse=True) 
+	cmpd_dicts_sorted = sorted(cmpd_dicts, key=lambda k: k['sample_count'], reverse=True)
 	cmpd_list_sorted = [item["cmpd"] for item in cmpd_dicts_sorted]
 	# get 'ranking' for a compound based on how it sorted
 	table["ccol"] = table["Compound"].apply(lambda x: (cmpd_list_sorted.index(x)+1))
-	
+
 	# melt to give each observation its own entry
 	melt = pd.melt(table, id_vars=["Compound", "Mass","ccol"])
 	# transpose
@@ -90,11 +91,11 @@ def cluster_and_melt(cmpd_table, min_mz, max_mz):
 	# -1 bc there are two other vars ahead of 1st in vector
 	melt["row"] = melt["variable"].apply(lambda x: c.index(x) - 1)
 	# small edits
-	melt["var"] = melt["variable"].apply(lambda x: x.split("/")[(len(x.split("/"))-1)].replace(".mzXML",""))
+	melt["var"] = melt["variable"].apply(lambda x: os.path.basename(x).replace(".mzXML", ""))
 	melt["cmpd"] = melt["Compound"].apply(lambda x: x.replace("compound_","#"))
 	melt["log_value"] = melt["value"].apply(lambda x: np.log10((x+1)))
 	melt2 = melt.drop(["variable", "Compound"], 1)
-	
+
 	# perform hierarchical clustering on both axes
 	t1 = np.matrix(table.set_index(["Compound","Mass","ccol"]))
 	samp_clust = hac.linkage(t1, "ward")
@@ -103,11 +104,11 @@ def cluster_and_melt(cmpd_table, min_mz, max_mz):
 	# add one to account for 0 indexing
 	hcols = {(x+1):(list(hac.leaves_list(samp_clust)).index(x) + 1) for x in list(hac.leaves_list(samp_clust))}
 	hrows = {(x+1):(list(hac.leaves_list(cmpd_clust)).index(x) +1) for x in list(hac.leaves_list(cmpd_clust))}
-	
+
 	# add in hclust indices - account for 0 index
 	melt2["hrow"] = melt2["row"].apply(lambda x: hrows[x])
 	melt2["hcol"] = melt2["col"].apply(lambda x: hcols[x])
-	
+
 	# write it out
 	melt2.to_csv("../data/cmpd_table_melted.tsv", sep="\t", index=False)
 
@@ -126,7 +127,7 @@ def main():
 	# define fields to keep from gnps response json
 	keepers = ["id", "SpectrumFile", "#Scan#", "Compound_Name", "LibraryQualityString", \
 		"MQScore", "SharedPeaks", "TIC_Query", "SpecMZ", "LibMZ", "MassDiff", "Charge"]
-	
+
 	# process filtering args
 	# if none supplied, use really high/low values
 	min_mz = args.minimum_mz if args.minimum_mz else 0

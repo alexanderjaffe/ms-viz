@@ -35,8 +35,7 @@ def get_keepers(cmpd_table, spectra_file):
 				if "mzXML" in element:
 					path = element.split("$")[0]
 					# parse out sample name and spectra
-					#sample = path.split("/")[len(path.split("/"))-1].replace(".mzXML",'')
-					sample = os.path.basename(path)
+					sample = os.path.basename(path).replace(".mzXML", "")
 					# take first spectrum as representative
 					spectrum = element.split("$")[1].split(",")[0]
 					# build sample: spectra to keep dict
@@ -141,8 +140,7 @@ def main():
 	# select all mzXML in in_dir
 	for sample in glob.glob((in_dir+"/*mzXML")):
 		# get file name
-		#basename = sample.split("/")[(len(sample.split("/"))-1)].replace(".mzXML", '')
-		basename = os.path.basename(sample)
+		basename = os.path.basename(sample).replace(".mzXML", "")
 		print "Processing " + basename
 		# convert to json and combine into one giant file
 		results = retrieve_spectra(sample, basename, keepers_dict)

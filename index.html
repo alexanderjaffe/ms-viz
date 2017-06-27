@@ -11,11 +11,11 @@
     <script src="http://d3js.org/queue.v1.min.js"></script>
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore.js"></script>
-    
+
     <!--Stylesheets-->
     <link rel="stylesheet" type="text/css" href="libs/bootstrap/css/bootstrap.min.css">
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
-    
+
     <!-- Get some nice font-->
     <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700' rel='stylesheet' type='text/css'>
 
@@ -74,12 +74,12 @@
               </form>
             </div>
         <div class="col-md-2" id = "show_hide">
-            <button type="button" class="button">Show/Hide GNPS hits</button> 
+            <button type="button" class="button">Show/Hide GNPS hits</button>
         </div>
             <div class="col-md-4" id = "legend">
             </div>
         </div>
-    </body> 
+    </body>
     <script>
         $(function(){ // this function is called after the HTML document is fully loaded
 
@@ -134,7 +134,7 @@
             var dataLoaded = function (error, _gnps_data, _spec_data, _hm_data) {
 
                 if (!error) {
-                    
+
                     hm_data = _hm_data;
                     gnps_data = _gnps_data;
                     spec_data = _spec_data;
@@ -159,7 +159,7 @@
                         if (intData.length > 0){
                             // get scan number
                             var scan_no = intData[0]["num"]
-                            var mgf = sample + ".mgf"
+                            var mgf = sample + ".mzXML.mgf"
 
                             // now search gnps data
                             var gnps = gnps_data.filter(function(d){
@@ -185,7 +185,7 @@
                                 d["score"] = false
                             }
                     })
-                    
+
                     // finally, initialize the viz
                     initVis();
                 }
