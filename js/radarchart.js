@@ -2,7 +2,7 @@
 http://bl.ocks.org/nbremer/6506614. */
 
 RadarChart = function(_parentElement, _data, _eventHandler){
-    
+
     this.parentElement = _parentElement;
     this.data = _data;
     this.displayData = [];
@@ -16,7 +16,7 @@ RadarChart = function(_parentElement, _data, _eventHandler){
 
 /* Method that sets up the SVG and the variables */
 RadarChart.prototype.initVis = function(){
-    
+
     var that = this;
 
     this.height = window.innerHeight/4;
@@ -73,7 +73,7 @@ RadarChart.prototype.wrangleData = function(_param){
             // generate a data object for each sample
             temp_arr = []
             temp_data.forEach(function(l){
-                
+
                 // if computing as binary 1/0
                 if (that.mode == "bin"){
                     temp = (parseFloat(l.log_value) > 0); disp_value = temp ? 1 : 0;
@@ -81,7 +81,7 @@ RadarChart.prototype.wrangleData = function(_param){
                     // if quantitative
                     else {disp_value = parseFloat(l.log_value)}
                 // add as data object
-                temp_arr.push({axis:l.var,value: disp_value,cmpd:l.cmpd});
+                temp_arr.push({axis:that.cleanSampleName(l.var),value: disp_value,cmpd:l.cmpd});
                 // get flat array of vals for later use
                 that.all_vals[_param].push(disp_value)
             })
@@ -89,7 +89,7 @@ RadarChart.prototype.wrangleData = function(_param){
             // add for each compound
             that.tempData.push(temp_arr)
         })
-        
+
         // update data globals
         if (_param=="quant"){this.displayData = this.quantdata = this.tempData}
             else {this.displayData = this.bindata = this.tempData}
@@ -101,7 +101,7 @@ RadarChart.prototype.wrangleData = function(_param){
         if (_param == "quant"){this.displayData = this.quantdata}
             else {this.displayData = this.bindata}
     }
-    
+
     this.updateVis();
 }
 
@@ -127,12 +127,12 @@ RadarChart.prototype.updateVis = function(){
 
     //Circular segments
     for(var j=0; j<this.levels-1; j++){
-      
+
       var levelFactor = this.factor*this.radius*((j+1)/this.levels);
-      
+
       var seg = this.svg.selectAll(".levels")
         .data(this.allAxis)
-       
+
       seg.enter()
         .append("svg:line")
         .attr("x1", function(d, i){return levelFactor*(1-that.factor*Math.sin(i*that.radians/that.total));})
@@ -152,7 +152,7 @@ RadarChart.prototype.updateVis = function(){
 
     //Text indicating at what % each level is
     for(var j=0; j<this.levels; j++){
-          
+
       var levelFactor = this.factor*this.radius*((j+1)/this.levels);
 
       var labs = this.svg.selectAll(".levels")
@@ -179,7 +179,7 @@ RadarChart.prototype.updateVis = function(){
     var series = 0;
     var axis = this.svg.selectAll(".axis")
       .data(this.allAxis);
-    
+
     axis.enter()
       .append("g")
       .attr("class", "axis");
@@ -206,14 +206,14 @@ RadarChart.prototype.updateVis = function(){
 
     // create polygons for each compound
     this.displayData.forEach(function(y, x){
-      
+
       var dataValues = [];
-      
+
       // calculate nodes for polygon
       var nodes = that.svg.selectAll(".nodes")
         .data(y, function(j, i){
           dataValues.push([
-            that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)), 
+            that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)),
             that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.cos(i*that.radians/that.total))
           ]);
         });
@@ -223,7 +223,7 @@ RadarChart.prototype.updateVis = function(){
 
       var polys = that.svg.selectAll(".area")
         .data([dataValues])
-        
+
       polys.enter()
         .append("polygon")
         .attr("class", function(d){return "cmpd" + y[0]["cmpd"].replace(/#/g , "")})
@@ -242,16 +242,16 @@ RadarChart.prototype.updateVis = function(){
         .style("stroke-opacity", 0)
 
       series++;
-    
+
     });
-    
+
     series=0;
 
     // add in data points for each compound
     this.displayData.forEach(function(y, x){
-      
+
       dataValues = [];
-      
+
       var circs = that.svg.selectAll(".nodes")
         .data(y)
 
@@ -262,7 +262,7 @@ RadarChart.prototype.updateVis = function(){
         .attr("alt", function(j){return Math.max(j.value, 0)})
         .attr("cx", function(j, i){
           dataValues.push([
-            that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)), 
+            that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total)),
             that.height/2*(1-(parseFloat(Math.max(j.value, 0))/that.maxValue)*that.factor*Math.cos(i*that.radians/that.total))
           ]);
           return that.height/2*(1-(Math.max(j.value, 0)/that.maxValue)*that.factor*Math.sin(i*that.radians/that.total));
@@ -310,8 +310,21 @@ RadarChart.prototype.onSelectionChange= function(pass){
           that.levels = 5;
       }
       else {that.levels=6}
-      
+
       // re-construct the data
       this.wrangleData(pass.value);
     }
+}
+
+/** cleanse sample names to avoid invalid class selectors */
+RadarChart.prototype.cleanSampleName = function(name){
+
+    // starts with numeric?
+    if (!isNaN(name[0] - parseFloat(name[0]))){
+      temp = "_" + name
+    }
+    else {temp = name}
+    // remove invalid chars
+    return temp.replace(/[~!@$%^&*()+=,./';:"?><\[\]\{\}|`#]/g, "_")
+
 }

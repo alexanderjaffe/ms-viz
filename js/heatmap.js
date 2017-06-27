@@ -2,7 +2,7 @@
 http://bl.ocks.org/ianyfchang/8119685. */
 
 HeatMap = function(_parentElement, _data, _eventHandler){
-    
+
     this.parentElement = _parentElement;
     this.data = _data;
     this.displayData = [];
@@ -16,7 +16,7 @@ HeatMap = function(_parentElement, _data, _eventHandler){
 
 /* Method that sets up the SVG and the variables */
 HeatMap.prototype.initVis = function(){
-    
+
     var that = this;
 
     this.width = window.innerWidth - this.margin.right - 120;
@@ -29,7 +29,7 @@ HeatMap.prototype.initVis = function(){
     this.data_mode = "quant";
     // initialize GNPS hits
     this.hits = false;
-    
+
     // add plotting space
     this.svg = this.parentElement.append("svg")
       .attr("width", this.width + this.margin.left + this.margin.right)
@@ -47,6 +47,8 @@ HeatMap.prototype.initVis = function(){
 /* Wrassle the data.*/
 HeatMap.prototype.wrangleData = function(){
 
+    var that = this;
+
     // displayData should hold the data which is visualized
     this.displayData = this.data.map(function(d) {
         return {
@@ -58,7 +60,7 @@ HeatMap.prototype.wrangleData = function(){
             hrow: +parseInt(d.hrow),
             hcol: +parseInt(d.hcol),
             ccol: +parseInt(d.ccol),
-            sample: d.var,
+            sample: that.cleanSampleName(d.var),
             cmpd: d.cmpd,
             mass: d.Mass,
             hit: d.hit,
@@ -110,7 +112,7 @@ HeatMap.prototype.updateVis = function(){
         .style("text-anchor", "end")
         .style("font-size", "10px")
         .attr("transform", "translate(-6," + that.cellSize/1.5 + ")")
-        .attr("class", function (d,i) { return "rowLabel mono r"+i;} ) 
+        .attr("class", function (d,i) { return "rowLabel mono r"+i;} )
         .on("mouseover", function(d) {d3.select(this).classed("text-hover",true);})
         .on("mouseout" , function(d) {d3.select(this).classed("text-hover",false);})
         .on("click", function(d,i) {that.rowSortOrder=!that.rowSortOrder; that.sortbylabel("r",i,that.rowSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;});
@@ -147,40 +149,40 @@ HeatMap.prototype.updateVis = function(){
         .style("fill", function(d) { return that.getColor(d.value); })
         .on("click", function(d,i) {that.colSortOrder=!that.colSortOrder; that.sortbylabel("c",(d.col-1),that.colSortOrder);d3.select("#order").property("selectedIndex", 4).node().focus();;})
         .on("mouseover", function(d){
-            
+
             //highlight text
             d3.select(this).classed("cell-hover",true);
             d3.selectAll(".rowLabel").classed("text-highlight",function(r,ri){return ri==(d.row-1)});
             // make column visible when hovered
             d3.selectAll(".colLabel")
                 .style("opacity",function(c,ci){
-                    if (ci==(d.col-1)) {return 1} 
+                    if (ci==(d.col-1)) {return 1}
                     else {return 0}})
                 .classed("text-highlight",function(c,ci){return ci==(d.col-1);});
 
             // highlight radar label using class name
-            d3.select(".label" + d.sample).style("fill","red")
+            d3.select(".label " + d.sample).style("fill","red")
             // trigger event for spectrum viz
             $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"on", value: (d.value > 0), hit: d.hit, score: d.score})
-            
+
         })
         .on("mouseout", function(d){
-            
+
             // undo highlights and fills
             d3.select(this).classed("cell-hover",false);
             d3.selectAll(".rowLabel").classed("text-highlight",false);
             d3.selectAll(".colLabel").style("opacity", 0);
             d3.select("#tooltip").classed("hidden", true);
             // unhighlight radar label
-            d3.select(".label" + d.sample).style("fill","black")
+            d3.select(".label " + d.sample).style("fill","black")
 
             // trigger event for spectrum viz
             $(that.eventHandler).trigger("cellMouseover", {cmpd:d.cmpd, mass:d.mass, sample:d.sample, dtype:"off"})
         });
 
-    
+
     // ADD IN LEGEND
-    
+
     var lh = 50;
     var lw = 400;
 
@@ -241,7 +243,7 @@ HeatMap.prototype.onSelectionChange= function(pass){
 
 // color function to deal with log data
 HeatMap.prototype.getColor = function(x){
-  
+
   if (x == 0){
     return "white";
   }else{
@@ -276,7 +278,7 @@ HeatMap.prototype.heatmapUpdate = function(value){
     if (value == "quant"){
         // cells
         t.selectAll(".cell")
-            .style("fill", function(d) { 
+            .style("fill", function(d) {
                 if (d.hit && that.hits){ return "red"}
                 else {return that.colorScale(d.value); }});
 
@@ -288,7 +290,7 @@ HeatMap.prototype.heatmapUpdate = function(value){
             .call(that.legend_axis)
         d3.selectAll(".legendtext").style("visibility","visible")
     }
-    
+
     else if (value == "bin"){
         // cells
         t.selectAll(".cell")
@@ -316,7 +318,7 @@ HeatMap.prototype.show_hits = function(value){
     if (this.hits){
         this.hits = false;
         // transition back to normal quant or binary coloration, depending on mode
-        this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){ 
+        this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){
             if (that.data_mode == "quant"){
                 return that.colorScale(d.value)
             }
@@ -326,12 +328,12 @@ HeatMap.prototype.show_hits = function(value){
             }
         })
     }
-    
+
     // if not showing
     else {
         this.hits = true;
         // transition to red + quant or binary, depending on mode
-        this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){ 
+        this.svg.selectAll("rect").transition().duration(750).style("fill", function(d){
             if (that.data_mode == "quant"){
                 if (d.hit){ return "red"}
                     else {return that.colorScale(d.value)}
@@ -348,14 +350,14 @@ HeatMap.prototype.show_hits = function(value){
 
 // order cells on user input
 HeatMap.prototype.order = function(value){
-   
+
     var that = this;
 
     // make transitions for sorting by hierarchical clustering
     if(value=="hclust"){
-        
+
         var t = this.svg.transition().duration(1200);
-        
+
         t.selectAll(".cell")
             .attr("x", function(d) { return (d.hcol -1) * that.cellWidth; })
             .attr("y", function(d) { return (d.hrow -1) * that.cellSize; });
@@ -366,12 +368,12 @@ HeatMap.prototype.order = function(value){
         t.selectAll(".colLabel")
             .attr("y", function (d, i) { return that.cellWidth * (that.getProp(that.colinfo, "cmpd", d, "hcol") - 1); });
     }
-    
+
     // make transitions for sorting by name
     else if (value=="sort_name"){
 
         var t = this.svg.transition().duration(1200);
-        
+
         t.selectAll(".cell")
             .attr("x", function(d) { return (d.col -1) * that.cellWidth; })
             .attr("y", function(d) { return (d.row -1) * that.cellSize; });
@@ -386,7 +388,7 @@ HeatMap.prototype.order = function(value){
     else if (value=="sort_count"){
 
         var t = this.svg.transition().duration(1200);
-        
+
         t.selectAll(".cell")
             .attr("x", function(d) { return (d.ccol -1) * that.cellWidth; })
 
@@ -397,19 +399,19 @@ HeatMap.prototype.order = function(value){
 
 // order cells on row/column click
 HeatMap.prototype.sortbylabel =   function(rORc,i,sortOrder){
-       
+
        var that = this;
        var t = this.svg.transition().duration(1200);
        var all=[];
        var sorted; // sorted is zero-based index
-       
-       d3.selectAll(".c"+rORc+i) 
+
+       d3.selectAll(".c"+rORc+i)
          .filter(function(d){
             all.push(d.value);
           });
-       
+
         // sort compounds in a sample
-        if(rORc=="r"){ 
+        if(rORc=="r"){
          sorted=d3.range(this.col_number).sort(function(a,b){ if(sortOrder){ return all[b]-all[a];}else{ return all[a]-all[b];}});
          t.selectAll(".cell")
            .attr("x", function(d) { return sorted.indexOf(d.col-1) * that.cellWidth; });
@@ -417,11 +419,24 @@ HeatMap.prototype.sortbylabel =   function(rORc,i,sortOrder){
           .attr("y", function (d, i) { return sorted.indexOf(i) * that.cellWidth});
        }
        // sort samples for a compound
-       else{ 
+       else{
          sorted=d3.range(this.row_number).sort(function(a,b){if(sortOrder){ return all[b]-all[a];}else{ return all[a]-all[b];}});
          t.selectAll(".cell")
            .attr("y", function(d) { return sorted.indexOf(d.row-1) * that.cellSize; });
          t.selectAll(".rowLabel")
           .attr("y", function (d, i) { return sorted.indexOf(i) * that.cellSize; });
        }
+}
+
+/** cleanse sample names to avoid invalid class selectors */
+HeatMap.prototype.cleanSampleName = function(name){
+
+    // starts with numeric?
+    if (!isNaN(name[0] - parseFloat(name[0]))){
+      temp = "_" + name
+    }
+    else {temp = name}
+    // remove invalid chars
+    return temp.replace(/[~!@$%^&*()+=,./';:"?><\[\]\{\}|`#]/g, "_")
+
 }

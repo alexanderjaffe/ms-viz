@@ -75,15 +75,17 @@ SpectrumVis.prototype.initVis = function(){
 
 SpectrumVis.prototype.wrangleData= function(pass){
 
+    var that=this;
     // filter for passed cmpd and sample
     if (pass){
 
         cmpd = pass.cmpd.replace("#", "compound_")
-        sample = pass.sample + ".mzXML"
 
         this.intData = this.data.filter(function(d){
 
-            if (d.compound == cmpd && d.sample == sample){
+            //generate cleaned sam
+            var sample_cleaned = that.cleanSampleName(d.sample)
+            if (d.compound == cmpd && sample_cleaned == pass.sample){
                 return true
             }
             else {return false}
@@ -230,4 +232,17 @@ SpectrumVis.prototype.percentile = function (arr, p) {
     if (upper >= arr.length) return arr[lower];
 
     return arr[lower] * (1 - weight) + arr[upper] * weight;
+}
+
+/** cleanse sample names to avoid invalid class selectors */
+SpectrumVis.prototype.cleanSampleName = function(name){
+
+    // starts with numeric?
+    if (!isNaN(name[0] - parseFloat(name[0]))){
+      temp = "_" + name
+    }
+    else {temp = name}
+    // remove invalid chars
+    return temp.replace(/[~!@$%^&*()+=,./';:"?><\[\]\{\}|`#]/g, "_")
+
 }
