@@ -37,7 +37,7 @@ def ftp(mode, path, basename, login, password):
 # invokes GNPS workflow
 # BY M. WANG - miw023@cs.ucsd.edu
 def invoke_workflow(base_url, parameters, login, password):
-	
+
 	username = login
 	password = password
 
@@ -65,13 +65,13 @@ def invoke_workflow(base_url, parameters, login, password):
 
 # creates parameter mapping for GNPS workflow
 # ADAPTED FROM M. WANG - miw023@cs.ucsd.edu
-def launch_workflow(username, file_name, workflow):
-	
+def launch_workflow(username, file_name, workflow, email_address):
+
 	# set general gnps params
 	parameters_map = {}
 
 	parameters_map["ANALOG_SEARCH"] = 0
-	parameters_map["email"] = "alexander_jaffe@berkeley.edu"
+	parameters_map["email"] = email_address
 	parameters_map["desc"] = "Query spectra for d3 viz."
 	parameters_map["FILTER_LIBRARY"] = 0
 	parameters_map["FILTER_PRECURSOR_WINDOW"] = 1
@@ -113,7 +113,7 @@ def launch_workflow(username, file_name, workflow):
 # Waits for not running, then returns status
 # BY M. WANG - miw023@cs.ucsd.edu
 def wait_for_workflow_finish(base_url, task_id):
-	
+
 	url = 'https://' + base_url + '/ProteoSAFe/status_json.jsp?task=' + task_id
 	# looks at status page on GNPS
 	json_obj = json.loads(requests.get(url, verify=False).text)
@@ -137,12 +137,13 @@ def main():
 	parser.add_argument('-i','--input', help='Path to directory of mgf.',required=True)
 	args = parser.parse_args()
 	in_dir = args.input
-	
+
 	# get GNPS login info
 	un = raw_input("GNPS username: ")
 	pw = getpass.getpass('Password: ')
 	base_url = "gnps.ucsd.edu"
 	print "Logging in as user %s." %(un)
+	email_address = raw_input("Email address for notifications? : ")
 
 	# open output files
 	log = open("../data/gnps.log", "w")
@@ -152,26 +153,26 @@ def main():
 
 	# for all mgf files in directory, analyze!
 	for sample in glob.glob((in_dir+"/*mgf")):
-		
+
 		# get file name
 		basename = sample.split("/")[(len(sample.split("/"))-1)]
 		print "Processing " + basename
 		ftp("upload", sample, basename, un, pw)
-		
+
 		# run library search
 		print "Starting GNPS library search..."
-		params1 = launch_workflow(un, basename, "search")
+		params1 = launch_workflow(un, basename, "search", email_address)
 		task_id1 = invoke_workflow(base_url, params1, un, pw)
 		print "Submitted to GNPS with task ID %s." %(task_id1)
 		json_results1 = wait_for_workflow_finish("gnps.ucsd.edu", task_id1)
 		print "Library search %s." %(json_results1)
 		url1 = 'https://' + base_url + '/ProteoSAFe/status.jsp?task=' + task_id1
 		log.write(basename + "\t" + "SEARCH\t"+json_results1+'\t' + url1 + '\n')
-		
+
 		# metabolic networking currently unused
 		'''# run metabolomic networking
 		print "Starting GNPS metabolomic networking..."
-		params2 = launch_workflow(un, basename, "network")
+		params2 = launch_workflow(un, basename, "network", email_address)
 		task_id2 = invoke_workflow(base_url, params2, un, pw)
 		print "Submitted to GNPS with task ID %s." %(task_id2)
 		json_results2 = wait_for_workflow_finish("gnps.ucsd.edu", task_id2)
@@ -183,7 +184,7 @@ def main():
 		results_url = 'https://' + base_url + '/ProteoSAFe/result_json.jsp?task=' + task_id1 + '&view=view_all_annotations_DB'
 		results = json.loads(requests.get(results_url, verify=False).text)
 		final_json = final_json + results["blockData"]
-		
+
 		# remove input file
 		ftp("delete", sample, basename, un, pw)
 
