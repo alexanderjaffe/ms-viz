@@ -28,7 +28,7 @@ optional arguments:
   -c COMPOUND_TABLE, --compound_table COMPOUND_TABLE
                         Path to filtered compound table.
   -s SPECTRA_FILE, --spectra_file SPECTRA_FILE
-                        Path to spectra mapping file.
+                        Path to spectra mapping file from SpecComp! 
 ```
 
 For example: ```test```
